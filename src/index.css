@@ -11,3 +11,22 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.containerview {
+  border-style: solid;
+}
+
+.available-unit-card {
+  width: 18rem;
+}
+
+.add-layer-box {
+  border-style: dashed;
+  border-width: thick;
+  border-color: lightslategray !important;
+}
+
+.add-layer-box:hover {
+  border-color: seagreen !important;
+  cursor: pointer;
+}

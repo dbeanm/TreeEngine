@@ -1,26 +1,30 @@
+import 'bootstrap/dist/css/bootstrap.min.css';
+import $ from 'jquery';
+import Popper from 'popper.js';
+import 'bootstrap/dist/js/bootstrap.bundle.min';
 import ReactDOM from 'react-dom';
 import './index.css';
 import {DummyModel, Unit, Layer, Container} from './script.js'
-import {UnitView, LayerView, ContainerView} from './App';
+import {UnitView, LayerView, ContainerView, Workspace} from './App';
 import reportWebVitals from './reportWebVitals';
 
-ReactDOM.render(
-  <UnitView unit={new Unit('tree1', new DummyModel(['a']))}/>,
-  document.getElementById('root')
-);
+// ReactDOM.render(
+//   <UnitView unit={new Unit('tree1', new DummyModel(['a']))}/>,
+//   document.getElementById('root')
+// );
 
-let l = new Layer('layer1')
-let t1 = new Unit('tree1', new DummyModel(['a']))
-let t2 = new Unit('tree2', new DummyModel(['b']))
-let t3 = new Unit('tree3', new DummyModel(['a', 'b']))
-l.add_unit(t1, 'my own tree name') // override tree's own name
-l.add_unit(t2) //name in layer should default to internal name from tree
-l.add_unit(t3)
+// let l = new Layer('layer1')
+// let t1 = new Unit('tree1', new DummyModel(['a']))
+// let t2 = new Unit('tree2', new DummyModel(['b']))
+// let t3 = new Unit('tree3', new DummyModel(['a', 'b']))
+// l.add_unit(t1, 'my own tree name') // override tree's own name
+// l.add_unit(t2) //name in layer should default to internal name from tree
+// l.add_unit(t3)
   
-ReactDOM.render(
-  <LayerView layer={l}/>,
-  document.getElementById('root2')
-);
+// ReactDOM.render(
+//   <LayerView layer={l}/>,
+//   document.getElementById('root2')
+// );
 
 
 let l1 = new Layer('layer1')
@@ -33,10 +37,17 @@ let t21 = new Unit('l2_tree1', new DummyModel(['l1_tree2', 'l1_tree1']))
 l2.add_unit(t21) // override tree's own name
 let c = new Container([l1, l2])
 
+// ReactDOM.render(
+//   <ContainerView container={c}/>,
+//   document.getElementById('root3')
+// );
+
 ReactDOM.render(
-  <ContainerView container={c}/>,
-  document.getElementById('root3')
+  <Workspace project_name={'my new project'} container={c}/>,
+  document.getElementById('root4')
 );
+
+
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

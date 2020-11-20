@@ -8,6 +8,13 @@ class AddLayerError extends Error {
 	}
 }
 
+class AddUnitError extends Error {
+	constructor(message) {
+	  super(message);
+	  this.name = "AddUnitError";
+	}
+}
+
 export class Container {
 	constructor(layers = []){
 		this.layers = {}
@@ -63,7 +70,13 @@ export class Layer {
 	add_unit(unit, unit_name = unit.name ) {
 		/*
 		add a tree and it's variables to the layer
+		cannot currently handle overwriting an existing unit name
+		as this would require removing the old unit with that name then adding this one
+		and there is no way to remove a unit yet
 		*/
+		if(this.units.hasOwnProperty(unit_name)){
+			throw new AddUnitError(`Unit name exists: ${unit_name}`)
+		}
 		this.units[unit_name] = unit
 		//could just set this.variables[unit_name] = unit.variables
 		//but doing it this way ensures that any variables that do not
@@ -73,7 +86,8 @@ export class Layer {
 			  console.log(`adding variable ${vname} from ${unit_name}`);
 			  this.add_variable(unit_name, vname, vdata.type)
 		}
-		this.size += 1
+		//don't just +=1 each time as we may be overwriting an existing unit
+		this.size = Object.keys(this.units).length
 	}
 
 	add_variable(scope, name, type) {
