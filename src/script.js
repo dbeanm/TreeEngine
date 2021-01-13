@@ -1,4 +1,4 @@
-import cytoscape from "./cytoscape.esm.min.js"
+import cytoscape from "cytoscape" //from "./cytoscape.esm.min.js"
 import compileExpression from "filtrex"
 
 class AddLayerError extends Error {
@@ -15,13 +15,17 @@ class AddUnitError extends Error {
 	}
 }
 
+/*
+Once a layer has been added to a container it should not be edited directly
+instead use the container functions to control the layer, which guarantees the container also updates
+*/
 export class Container {
 	constructor(layers = []){
 		this.layers = {}
 		this.layer_order = []
 		this.state = {}
 		this.variables = {}
-		this.inputs = {}
+		this.inputs = {'good': {}, 'warn': {}, 'conflict': {}}
 		for(const l of layers){
 			//for...of will be in order, for...in is not guaranteed to be
 			this.add_layer(l)
@@ -35,7 +39,13 @@ export class Container {
 			this.layer_order.push(name)
 			this.layers[name] = layer
 			this.variables[name] = layer.variables
+			this.resolve_inputs()
 		}
+	}
+
+	add_unit_to_layer(layer_name, unit, unit_name = unit.name){
+		this.layers[layer_name].add_unit(unit, unit_name)
+		this.resolve_inputs()
 	}
 
 	run (input = {}, scoped_input = {}) {
@@ -51,6 +61,42 @@ export class Container {
 	update_inputs(current, updates){
 		let input = Object.assign(current, updates);
 		return input
+	}
+
+	resolve_inputs(){
+		this.inputs = {'good': {}, 'warn': {}, 'conflict': {}}
+		let seen = {}
+		let name;
+		for (const [layer_name, layer_variables] of Object.entries(this.variables)) {
+			//key is a layer name, value is layer.variables which itself is {name:{props}}
+			for (const [uname, udata] of Object.entries(layer_variables)) {
+				for (const [vname, vdata] of Object.entries(udata)) {
+					if(!seen.hasOwnProperty(vname)){
+						//type0 is a shortcut to get the unique type used if types.size == 0
+						//without converting the set to an array
+						name = `${layer_name}-${uname}`
+						seen[vname] = {'appears': [], 'types': new Set(), 'type0': vdata.type}
+					}
+					seen[vname]['appears'].push(name)
+					seen[vname]['types'].add(vdata.type)
+				}
+			}
+		}
+
+		let ob;
+		for (const [key, value] of Object.entries(seen)) {
+			if(value.types.size === 1){
+				ob = {type: value.type0, appears: value.appears}
+				if(value.appears.length > 1){
+					this.inputs.warn[key] = ob
+				} else {
+					this.inputs.good[key] = ob
+				}
+			} else {
+				ob = {type: '', appears: value.appears, }
+				this.inputs.conflict[key] = ob
+			}
+		}
 	}
 }
 

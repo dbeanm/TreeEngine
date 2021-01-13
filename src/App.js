@@ -6,6 +6,18 @@ function ListItem(props) {
   return <li>{props.name}</li>;
 }
 
+export class InputListItem extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    return (
+      <li>[{this.props.var_state}] Input for {this.props.name} which is a {this.props.var_data.type}</li>
+    );
+  }
+}
+
 export class UnitView extends React.Component {
   constructor(props) {
     super(props);
@@ -146,15 +158,143 @@ export class ContainerView extends React.Component {
       // <ListItem key={layer_name} name={layer_name} />
       <li key={layer_name}><LayerView key={layer_name} layer={this.props.container.layers[layer_name]} /></li>
     );
+    const model_can_build = Object.keys(this.props.container.inputs.conflict).length == 0;
+
+    const all_good = Object.keys(this.props.container.inputs.good)
+    const all_warn = Object.keys(this.props.container.inputs.warn)
+    let all_inputs = []
+    for (const key of all_good) {
+      all_inputs.push({'name': key, 'type': this.props.container.inputs.good[key].type, 'state': 'good'})
+    }
+    for (const key of all_warn) {
+      all_inputs.push({'name': key, 'type': this.props.container.inputs.warn[key].type, 'state': 'warn'})
+    }
+
     return (
       <div className="containerview">
         <p>Model Container</p>
+        <p>Input</p>
+        <p>Model can build: {model_can_build.toString()}</p>
+        <ContainerInputManualView inputs={all_inputs}></ContainerInputManualView>
+        <p>Input list</p>
+        <ContainerVariablesView variables={this.props.container.variables}></ContainerVariablesView>
         <p>Layers ({layers.length}):</p>
         <ul>
           {listItems}
         </ul>
       </div>
     );
+  }
+}
+
+export class ContainerVariablesView extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    const all_contained_variables = {}
+    let s, ss
+    let listItems = []
+    let k = 0
+    for (const layer_name in this.props.variables) {
+      const layer = this.props.variables[layer_name];
+      for (const unit_name in layer) {
+        const vars_in_unit = layer[unit_name];
+        for (const var_name in vars_in_unit) {
+          const var_data = vars_in_unit[var_name];
+          if(!all_contained_variables.hasOwnProperty(var_data)){
+            all_contained_variables[var_name] = []
+          }
+          s = `as ${var_data.type} in ${layer_name} - ${unit_name}`
+          all_contained_variables[var_name].push(s)
+          ss = `${var_name} as ${var_data.type} in ${layer_name} - ${unit_name}`
+          listItems.push(<ListItem key={k} name={ss} />)
+          k += 1
+        }
+      }
+    }
+    return (
+      <ul>
+        {listItems}
+      </ul>
+    )
+  }
+}
+
+export class ContainerInputManualView extends React.Component {
+  // this component assumes the inputs do not have conflicts
+  //it should not be created if there are problems
+  constructor(props) {
+    super(props);
+    this.state = {};
+    const varnames = Object.keys(this.props.inputs)
+    for (const v of varnames) {
+      const t = this.props.inputs[v].type
+      if(t == "num"){
+        this.state[v] = undefined
+      } else if(t == 'bool') {
+        this.state[v] = undefined
+      } else {
+        this.state[v] = undefined
+      }
+    }
+    this.handleChange = this.handleChange.bind(this);
+  }
+
+  handleChange(event) {
+    const target = event.target;
+    const value = target.type === 'checkbox' ? target.checked : target.value;
+    const name = target.name;
+
+    this.setState({
+      [name]: value
+    });
+  }
+
+  renderTableHeader() {
+    let header = ["Variable", "Value"]
+    return header.map((key, index) => {
+       return <th key={index}>{key}</th>
+    })
+ }
+
+ renderTableData() {
+  return this.props.inputs.map((student, index) => {
+     const { name, type } = student //destructuring
+     if(type == "num"){
+      return (
+        <tr key={name}>
+           <td>{name}</td>
+           <td><input type="number" name={name} value={this.state[name]} onChange={this.handleChange} /></td>
+        </tr>
+     )
+     } else if(type == 'bool'){
+        <tr key={name}>
+           <td>{name}</td>
+           <td>TODO BOOL</td>
+        </tr>
+     } else {
+        <tr key={name}>
+           <td>{name}</td>
+           <td><input type="text" name={name} value={this.state[name]} onChange={this.handleChange} /></td>
+        </tr>
+     }
+     
+  })
+}
+
+  render() {    
+    return (
+      <div>
+            <table id='model-input'>
+               <tbody>
+                  <tr>{this.renderTableHeader()}</tr>
+                  {this.renderTableData()}
+               </tbody>
+            </table>
+         </div>
+    )
   }
 }
 
@@ -177,7 +317,8 @@ export class Workspace extends React.Component {
     //testing
     layer_name = 'layer1'
     let c = this.container
-    c.layers[layer_name].add_unit(this.state.available_units[unit_name])
+    //c.layers[layer_name].add_unit(this.state.available_units[unit_name])
+    c.add_unit_to_layer(layer_name, this.state.available_units[unit_name])
     this.setState({container: c})
   }
 
