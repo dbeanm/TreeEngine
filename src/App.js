@@ -146,27 +146,10 @@ export class LayerView extends React.Component {
 export class ContainerView extends React.Component {
   constructor(props) {
     super(props);
-
-    const all_good = Object.keys(this.props.container.inputs.usable)
-    let all_inputs = {}
-    for (const key of all_good) {
-      all_inputs[key] = Object.assign({ 'value':undefined}, this.props.container.inputs.usable[key])
-    }
-
-    this.state = {user_input: all_inputs}
   
-    this.handleFieldChange = this.handleFieldChange.bind(this);
   }
   static defaultProps = {
     container: new Container(),
-  }
-
-  handleFieldChange(fieldId, value) {
-    //console.log("handlefieldchange", fieldId, value)
-    let s = this.state.user_input
-    s[fieldId].value = value
-    //console.log(s)
-    this.setState({ user_input: s});
   }
 
   render() {
@@ -176,16 +159,10 @@ export class ContainerView extends React.Component {
       // <ListItem key={layer_name} name={layer_name} />
       <li key={layer_name}><LayerView key={layer_name} layer={this.props.container.layers[layer_name]} /></li>
     );
-    const model_can_build = Object.keys(this.props.container.inputs.conflict).length == 0;
-
-    
 
     return (
       <div className="containerview">
-        <p>Model Container</p>
-        <p>Input</p>
-        <p>Model can build: {model_can_build.toString()}</p>
-        <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange}></ContainerInputManualView>
+        <p>Model Container</p>        
         <p>Full input list</p>
         <ContainerVariablesView variables={this.props.container.variables}></ContainerVariablesView>
         <p>Layers ({layers.length}):</p>
@@ -296,13 +273,24 @@ export class ContainerInputManualView extends React.Component {
 export class Workspace extends React.Component {
   constructor(props) {
     super(props);
+
+
+    const all_good = Object.keys(this.props.container.inputs.usable)
+    let all_inputs = {}
+    for (const key of all_good) {
+      all_inputs[key] = Object.assign({ 'value':undefined}, this.props.container.inputs.usable[key])
+    }
+
     this.state = {
       container: this.props.container,
-      available_units: {}
+      available_units: {},
+      user_input: all_inputs
     }
     this.container = this.props.container
 
     this.handleUnitAdded = this.handleUnitAdded.bind(this);
+    this.handleFieldChange = this.handleFieldChange.bind(this);
+
   }
   static defaultProps = {
     container: new Container()
@@ -315,6 +303,14 @@ export class Workspace extends React.Component {
     //c.layers[layer_name].add_unit(this.state.available_units[unit_name])
     c.add_unit_to_layer(layer_name, this.state.available_units[unit_name])
     this.setState({container: c})
+  }
+
+  handleFieldChange(fieldId, value) {
+    //console.log("handlefieldchange", fieldId, value)
+    let s = this.state.user_input
+    s[fieldId].value = value
+    //console.log(s)
+    this.setState({ user_input: s});
   }
 
   fetch_models(){
@@ -350,6 +346,8 @@ export class Workspace extends React.Component {
   }
 
   render() {
+    const model_can_build = Object.keys(this.state.container.inputs.conflict).length == 0;
+
     const listItems = Object.keys(this.state.available_units).map((unit_name) =>
     <div className="col"><UnitAvailableView key={unit_name} unit={this.state.available_units[unit_name]} handleUnitAdded={this.handleUnitAdded}/></div>
     );
@@ -359,6 +357,14 @@ export class Workspace extends React.Component {
           <div className="col">
           <p>Project: {this.props.project_name}</p>
           <button type="button" className="btn btn-primary" onClick={() => this.fetch_models()}>Load Models</button>
+          </div>
+        </div>
+
+        <div className="row">
+          <div className="col">
+          <p>Model input</p>
+          <p>Model can build: {model_can_build.toString()}</p>
+        <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange}></ContainerInputManualView>
           </div>
         </div>
         
