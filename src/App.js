@@ -36,6 +36,7 @@ export class UnitView extends React.Component {
         <ul>
           {listItems}
         </ul>
+    <p>Unit result: {this.props.result}</p>
       </div>
     );
   }
@@ -110,7 +111,7 @@ export class LayerView extends React.Component {
     const units = Object.keys(this.props.layer.units)
     const listItems = units.map((unit_name) =>
       // Correct! Key should be specified inside the array.
-      <li key={unit_name}><UnitView key={unit_name} unit={this.props.layer.units[unit_name]} /></li>
+      <li key={unit_name}><UnitView key={unit_name} unit={this.props.layer.units[unit_name]} result={this.props.layer.state[unit_name]}/></li>
     );
 
     const conflicts = Array.from(this.props.layer.conflicts)
@@ -220,7 +221,15 @@ export class ContainerInputManualView extends React.Component {
 
   handleChange(event) {    
     const target = event.target;
-    const value = target.type === 'checkbox' ? target.checked : target.value;
+    let value
+    if(target.type === 'checkbox'){
+      value = target.checked
+    } else if(target.type === 'number') {
+      value = parseFloat(target.value)
+    } else {
+      value = target.value
+    }
+
     const name = target.name;
     this.props.onChange(name, value);
   }
@@ -281,6 +290,12 @@ export class Workspace extends React.Component {
       all_inputs[key] = Object.assign({ 'value':undefined}, this.props.container.inputs.usable[key])
     }
 
+    // const all_layers = Object.keys(this.props.container.layers)
+    // let all_results = {}
+    // for (const key of all_layers) {
+      
+    // }
+
     this.state = {
       container: this.props.container,
       available_units: {},
@@ -302,7 +317,15 @@ export class Workspace extends React.Component {
     let c = this.container
     //c.layers[layer_name].add_unit(this.state.available_units[unit_name])
     c.add_unit_to_layer(layer_name, this.state.available_units[unit_name])
-    this.setState({container: c})
+
+    let all_inputs = this.state.user_input
+    for (const key of Object.keys(c.inputs.usable)) {
+      if(!this.state.user_input.hasOwnProperty(key)){
+        all_inputs[key] = Object.assign({ 'value':undefined}, c.inputs.usable[key])
+      }
+    }
+
+    this.setState({container: c, user_input: all_inputs})
   }
 
   handleFieldChange(fieldId, value) {
@@ -345,6 +368,18 @@ export class Workspace extends React.Component {
     this.setState({container: c})
   }
 
+  run_model(){
+    let input = {}
+    for (const key in this.state.user_input) {
+      if (this.state.user_input.hasOwnProperty(key)) {
+        const element = this.state.user_input[key];
+        input[key] = element.value
+      }
+    }
+    const result = this.container.run(input)
+    this.setState({result: result})
+  }
+
   render() {
     const model_can_build = Object.keys(this.state.container.inputs.conflict).length == 0;
 
@@ -364,10 +399,15 @@ export class Workspace extends React.Component {
           <div className="col">
           <p>Model input</p>
           <p>Model can build: {model_can_build.toString()}</p>
-        <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange}></ContainerInputManualView>
+        <ContainerInputManualView inputs={this.state.container.inputs.usable} onChange={this.handleFieldChange}></ContainerInputManualView>
           </div>
         </div>
         
+        <div className="row">
+          <div className="col">
+            <button type="button" className="btn btn-success" onClick={() => this.run_model()}>Run</button>
+          </div>
+        </div>
 
         <div className="row">
             {listItems}
