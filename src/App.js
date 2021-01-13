@@ -146,9 +146,31 @@ export class LayerView extends React.Component {
 export class ContainerView extends React.Component {
   constructor(props) {
     super(props);
+
+    const all_good = Object.keys(this.props.container.inputs.good)
+    const all_warn = Object.keys(this.props.container.inputs.warn)
+    let all_inputs = {}
+    for (const key of all_good) {
+      all_inputs[key] = {'name': key, 'type': this.props.container.inputs.good[key].type, 'state': 'good', 'value':undefined}
+    }
+    for (const key of all_warn) {
+      all_inputs[key] = {'name': key, 'type': this.props.container.inputs.warn[key].type, 'state': 'warn', 'value':undefined}
+    }
+
+    this.state = {user_input: all_inputs}
+  
+    this.handleFieldChange = this.handleFieldChange.bind(this);
   }
   static defaultProps = {
-    container: new Container()
+    container: new Container(),
+  }
+
+  handleFieldChange(fieldId, value) {
+    //console.log("handlefieldchange", fieldId, value)
+    let s = this.state.user_input
+    s[fieldId].value = value
+    //console.log(s)
+    this.setState({ user_input: s});
   }
 
   render() {
@@ -160,23 +182,15 @@ export class ContainerView extends React.Component {
     );
     const model_can_build = Object.keys(this.props.container.inputs.conflict).length == 0;
 
-    const all_good = Object.keys(this.props.container.inputs.good)
-    const all_warn = Object.keys(this.props.container.inputs.warn)
-    let all_inputs = []
-    for (const key of all_good) {
-      all_inputs.push({'name': key, 'type': this.props.container.inputs.good[key].type, 'state': 'good'})
-    }
-    for (const key of all_warn) {
-      all_inputs.push({'name': key, 'type': this.props.container.inputs.warn[key].type, 'state': 'warn'})
-    }
+    
 
     return (
       <div className="containerview">
         <p>Model Container</p>
         <p>Input</p>
         <p>Model can build: {model_can_build.toString()}</p>
-        <ContainerInputManualView inputs={all_inputs}></ContainerInputManualView>
-        <p>Input list</p>
+        <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange}></ContainerInputManualView>
+        <p>Full input list</p>
         <ContainerVariablesView variables={this.props.container.variables}></ContainerVariablesView>
         <p>Layers ({layers.length}):</p>
         <ul>
@@ -226,30 +240,16 @@ export class ContainerInputManualView extends React.Component {
   // this component assumes the inputs do not have conflicts
   //it should not be created if there are problems
   constructor(props) {
-    super(props);
-    this.state = {};
-    const varnames = Object.keys(this.props.inputs)
-    for (const v of varnames) {
-      const t = this.props.inputs[v].type
-      if(t == "num"){
-        this.state[v] = undefined
-      } else if(t == 'bool') {
-        this.state[v] = undefined
-      } else {
-        this.state[v] = undefined
-      }
-    }
+    super(props);    
+
     this.handleChange = this.handleChange.bind(this);
   }
 
-  handleChange(event) {
+  handleChange(event) {    
     const target = event.target;
     const value = target.type === 'checkbox' ? target.checked : target.value;
     const name = target.name;
-
-    this.setState({
-      [name]: value
-    });
+    this.props.onChange(name, value);
   }
 
   renderTableHeader() {
@@ -260,28 +260,27 @@ export class ContainerInputManualView extends React.Component {
  }
 
  renderTableData() {
-  return this.props.inputs.map((student, index) => {
-     const { name, type } = student //destructuring
-     if(type == "num"){
-      return (
-        <tr key={name}>
-           <td>{name}</td>
-           <td><input type="number" name={name} value={this.state[name]} onChange={this.handleChange} /></td>
-        </tr>
-     )
-     } else if(type == 'bool'){
-        <tr key={name}>
-           <td>{name}</td>
-           <td>TODO BOOL</td>
-        </tr>
-     } else {
-        <tr key={name}>
-           <td>{name}</td>
-           <td><input type="text" name={name} value={this.state[name]} onChange={this.handleChange} /></td>
-        </tr>
+   let listItems = []
+   let in_el;
+   for (const key in this.props.inputs) {
+     if (this.props.inputs.hasOwnProperty(key)) {
+       const element = this.props.inputs[key];
+       const { name, type } = element
+       //console.log(name, type, element, key)
+      if(type == "num"){
+          in_el = <input type="number" name={name} value={this.props.inputs[name].value} onChange={this.handleChange} />
+      } else if(type == 'bool'){
+          in_el = "TODO BOOL"
+      } else {
+          in_el = <input type="text" name={name} value={this.props.inputs[name].value} onChange={this.handleChange} />
+      }
+      listItems.push(<tr key={name}>
+        <td>{name}</td>
+        <td>{in_el}</td>
+      </tr>)
      }
-     
-  })
+   }
+   return ( listItems )
 }
 
   render() {    
