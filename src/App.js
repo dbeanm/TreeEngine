@@ -147,14 +147,10 @@ export class ContainerView extends React.Component {
   constructor(props) {
     super(props);
 
-    const all_good = Object.keys(this.props.container.inputs.good)
-    const all_warn = Object.keys(this.props.container.inputs.warn)
+    const all_good = Object.keys(this.props.container.inputs.usable)
     let all_inputs = {}
     for (const key of all_good) {
-      all_inputs[key] = {'name': key, 'type': this.props.container.inputs.good[key].type, 'state': 'good', 'value':undefined}
-    }
-    for (const key of all_warn) {
-      all_inputs[key] = {'name': key, 'type': this.props.container.inputs.warn[key].type, 'state': 'warn', 'value':undefined}
+      all_inputs[key] = Object.assign({ 'value':undefined}, this.props.container.inputs.usable[key])
     }
 
     this.state = {user_input: all_inputs}

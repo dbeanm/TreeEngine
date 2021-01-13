@@ -25,7 +25,7 @@ export class Container {
 		this.layer_order = []
 		this.state = {}
 		this.variables = {}
-		this.inputs = {'good': {}, 'warn': {}, 'conflict': {}}
+		this.inputs = {'conflict': {}, 'usable': {}}
 		for(const l of layers){
 			//for...of will be in order, for...in is not guaranteed to be
 			this.add_layer(l)
@@ -64,7 +64,7 @@ export class Container {
 	}
 
 	resolve_inputs(){
-		this.inputs = {'good': {}, 'warn': {}, 'conflict': {}}
+		this.inputs = {'conflict': {}, 'usable': {}}
 		let seen = {}
 		let name;
 		for (const [layer_name, layer_variables] of Object.entries(this.variables)) {
@@ -86,14 +86,15 @@ export class Container {
 		let ob;
 		for (const [key, value] of Object.entries(seen)) {
 			if(value.types.size === 1){
-				ob = {type: value.type0, appears: value.appears}
+				ob = {type: value.type0, appears: value.appears, state: undefined, name: key}
 				if(value.appears.length > 1){
-					this.inputs.warn[key] = ob
+					ob['state'] = 'warn'
 				} else {
-					this.inputs.good[key] = ob
+					ob['state'] = 'good'
 				}
+				this.inputs.usable[key] = ob
 			} else {
-				ob = {type: '', appears: value.appears, }
+				ob = {type: '', appears: value.appears, state: 'conflict', name:key}
 				this.inputs.conflict[key] = ob
 			}
 		}
