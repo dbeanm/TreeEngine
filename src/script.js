@@ -51,11 +51,14 @@ export class Container {
 	run (input = {}, scoped_input = {}) {
 		// run each layer
 		//update state between layers with result of previous
+		let result = {}
 		for(const layer_name of this.layer_order){
 			let layer_r = this.layers[layer_name].run(input, scoped_input)
 			input = this.update_inputs(input, layer_r)
+			result[layer_name] = layer_r
 		}
 		this.state = input
+		return result
 	}
 
 	update_inputs(current, updates){
@@ -135,6 +138,8 @@ export class Layer {
 		}
 		//don't just +=1 each time as we may be overwriting an existing unit
 		this.size = Object.keys(this.units).length
+
+		this.state[unit_name] = undefined
 	}
 
 	add_variable(scope, name, type) {
@@ -162,12 +167,19 @@ export class Layer {
 		//only possible if the type is the same
 	}
 
+	reset_state(){
+		for (const unit_name of Object.keys(this.units)) {
+			this.state[unit_name] = undefined
+		}
+	}
+
 	run(all = {}, scoped = {}) {
 		//run each Unit
 		// all = input variables for all layers
 		// scoped = {Unit name : {variables}} to overwrite or supplement global inputs
 		// scoped variables are needed if there are conflicting inputs between layers
 		let results = {}
+		this.reset_state()
 		for (const [key, value] of Object.entries(this.units)) {
 		  console.log(`run ${key}`);
 		  let this_unit_input = this.handle_input(key, all, scoped)
