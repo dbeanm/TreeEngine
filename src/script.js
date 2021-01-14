@@ -669,11 +669,11 @@ export class ModelState {
 }
 
 export class DummyModel extends Model{
-	constructor(variables = []){
+	constructor(num_variables = [], bool_variables = []){
 		super()
 		//normally the variables would be inferred from the graph 
 		//for testing just set them in constructor since there is no graph
-		this.variables = this.configure_variables(variables)
+		this.variables = this.configure_variables(num_variables, bool_variables)
 	}
 
 	run(input){
@@ -686,10 +686,13 @@ export class DummyModel extends Model{
 		return result
 	}
 
-	configure_variables(vs) {
+	configure_variables(vs = [], bvs = []) {
 		let vars = {}
 		for (let i = vs.length - 1; i >= 0; i--) {
 			vars[vs[i]] = {'type':'num'}
+		}
+		for (let i = bvs.length - 1; i >= 0; i--) {
+			vars[bvs[i]] = {'type':'bool'}
 		}
 		return vars
 	}

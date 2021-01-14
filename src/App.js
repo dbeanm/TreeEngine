@@ -339,10 +339,11 @@ export class Workspace extends React.Component {
   fetch_models(){
     //get available models from some db
     const m = [1, 2, 3, 4, 5]
-    let models = {}
+    let models = {}, name, bv
     for(const i in m){
-      let name = 'Loaded Unit ' + String(i)
-      let md = new Unit(name, new DummyModel(['x', 'y', i]))
+      name = 'Loaded Unit ' + String(i)
+      bv = 'boolvar_' + String(i)
+      let md = new Unit(name, new DummyModel(['x', 'y', i], [bv]))
       models[name] = md 
     }
     const au = {available_units: models}
