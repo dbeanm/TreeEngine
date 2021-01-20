@@ -27,27 +27,33 @@ import reportWebVitals from './reportWebVitals';
 // );
 
 
-let l1 = new Layer('layer1')
-let t11 = new Unit('l1_tree1', new DummyModel(['a', 'b']))
-let t12 = new Unit('l1_tree2', new DummyModel(['b']))
-l1.add_unit(t11) 
-l1.add_unit(t12)
-let l2 = new Layer('layer2')
-let t21 = new Unit('l2_tree1', new DummyModel(['l1_tree2', 'l1_tree1']))
-l2.add_unit(t21) // override tree's own name
-let c = new Container([l1, l2])
+// let l1 = new Layer('layer1')
+// let t11 = new Unit('l1_tree1', new DummyModel(['a', 'b']))
+// let t12 = new Unit('l1_tree2', new DummyModel(['b']))
+// l1.add_unit(t11) 
+// l1.add_unit(t12)
+// let l2 = new Layer('layer2')
+// let t21 = new Unit('l2_tree1', new DummyModel(['l1_tree2', 'l1_tree1']))
+// l2.add_unit(t21) // override tree's own name
+// let c = new Container([l1, l2])
 
 // ReactDOM.render(
 //   <ContainerView container={c}/>,
 //   document.getElementById('root3')
 // );
 
+// ReactDOM.render(
+//   <Workspace project_name={'my new project'} container={c}/>,
+//   document.getElementById('root4')
+// );
+
+let l1 = new Layer('layer1')
+let c = new Container([l1])
+
 ReactDOM.render(
   <Workspace project_name={'my new project'} container={c}/>,
   document.getElementById('root4')
 );
-
-
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

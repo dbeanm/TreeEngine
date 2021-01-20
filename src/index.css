@@ -30,3 +30,8 @@ code {
   border-color: seagreen !important;
   cursor: pointer;
 }
+
+.model-input-table {
+  table-layout: fixed;
+  width: 100%;
+}

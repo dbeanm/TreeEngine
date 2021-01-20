@@ -1,5 +1,5 @@
 import React from 'react';
-import {Unit, Layer, DummyModel, Container} from './script.js';
+import {Unit, Layer, DummyModel, Container, EsynDecisionTree} from './script.js';
 
 function ListItem(props) {
   // Correct! There is no need to specify the key here:
@@ -231,6 +231,7 @@ export class ContainerInputManualView extends React.Component {
     }
 
     const name = target.name;
+    //console.log('handlechange', name, value)
     this.props.onChange(name, value);
   }
 
@@ -247,14 +248,62 @@ export class ContainerInputManualView extends React.Component {
    for (const key in this.props.inputs) {
      if (this.props.inputs.hasOwnProperty(key)) {
        const element = this.props.inputs[key];
-       const { name, type } = element
-       //console.log(name, type, element, key)
+       const { name, type, value } = element
+       const id_true = `${name}_true`
+       const id_false = `${name}_false`
+       const id_unknown = `${name}_unknown`
+       //console.log('creating input el for ',name, type, value)
       if(type == "num"){
-          in_el = <input type="number" name={name} value={this.props.inputs[name].value} onChange={this.handleChange} />
+          in_el = <input type="number" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
       } else if(type == 'bool'){
-          in_el = "TODO BOOL"
+          in_el = (<div>
+            <div class="form-check">
+            <input
+              id={id_true}
+              type="radio"
+              name={name}
+              value="True"
+              checked={value === "True"}
+              className="form-check-input"
+              onChange={this.handleChange} 
+            />
+            <label htmlFor={id_true} className="form-check-label">
+            True
+          </label>
+          </div>
+          
+          <div class="form-check">
+          <input
+            id={id_false}
+            type="radio"
+            name={name}
+            value="False"
+            checked={value === "False"}
+            className="form-check-input"
+            onChange={this.handleChange} 
+          />
+          <label htmlFor={id_false} className="form-check-label">
+          False
+        </label>
+        </div>
+        
+        <div class="form-check">
+        <input
+          id={id_unknown}
+          type="radio"
+          name={name}
+          value="Unknown"
+          checked={value === "Unknown"}
+          className="form-check-input"
+          onChange={this.handleChange} 
+        />
+        <label htmlFor={id_unknown} className="form-check-label">
+        Unknown
+      </label>
+      </div>
+      </div>)
       } else {
-          in_el = <input type="text" name={name} value={this.props.inputs[name].value} onChange={this.handleChange} />
+          in_el = <input type="text" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
       }
       listItems.push(<tr key={name}>
         <td>{name}</td>
@@ -268,7 +317,7 @@ export class ContainerInputManualView extends React.Component {
   render() {    
     return (
       <div>
-            <table id='model-input'>
+            <table id='model-input' className="model-input-table table">
                <tbody>
                   <tr>{this.renderTableHeader()}</tr>
                   {this.renderTableData()}
@@ -276,6 +325,46 @@ export class ContainerInputManualView extends React.Component {
             </table>
          </div>
     )
+  }
+}
+
+class FileInput extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.fileInput = React.createRef();
+    this.state ={
+      file:null,
+      content:null
+    }
+  }
+  handleSubmit(event) {
+    event.preventDefault();
+    this.setState({file:this.fileInput.current.files[0]})
+    const fname = this.fileInput.current.files[0].name
+    var reader = new FileReader();
+		//define function to run when reader is done loading the file
+    reader.onloadend = () => {
+      let esyn_model = new EsynDecisionTree(JSON.parse(reader.result))
+      let esyn_unit = new Unit(fname, esyn_model)
+      this.props.handleUnitUpload(esyn_unit)
+      this.setState({content:esyn_unit})
+    }
+    reader.readAsText(this.fileInput.current.files[0])
+  }
+
+
+  render() {
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <label>
+          Upload file:
+          <input type="file" ref={this.fileInput} />
+        </label>
+        <br />
+        <button type="button" className="btn btn-primary" type="submit">Submit</button>
+      </form>
+    );
   }
 }
 
@@ -305,6 +394,7 @@ export class Workspace extends React.Component {
 
     this.handleUnitAdded = this.handleUnitAdded.bind(this);
     this.handleFieldChange = this.handleFieldChange.bind(this);
+    this.handleUnitUpload = this.handleUnitUpload.bind(this);
 
   }
   static defaultProps = {
@@ -316,6 +406,7 @@ export class Workspace extends React.Component {
     layer_name = 'layer1'
     let c = this.container
     //c.layers[layer_name].add_unit(this.state.available_units[unit_name])
+    console.log("trying to add unit", unit_name, "to", layer_name, "the unit:", this.state.available_units[unit_name])
     c.add_unit_to_layer(layer_name, this.state.available_units[unit_name])
 
     let all_inputs = this.state.user_input
@@ -326,6 +417,13 @@ export class Workspace extends React.Component {
     }
 
     this.setState({container: c, user_input: all_inputs})
+  }
+
+  handleUnitUpload(unit){
+    const name = unit.name;
+    const au = this.state.available_units
+    au[name] = unit
+    this.setState({available_units: au})
   }
 
   handleFieldChange(fieldId, value) {
@@ -385,7 +483,7 @@ export class Workspace extends React.Component {
     const model_can_build = Object.keys(this.state.container.inputs.conflict).length == 0;
 
     const listItems = Object.keys(this.state.available_units).map((unit_name) =>
-    <div className="col"><UnitAvailableView key={unit_name} unit={this.state.available_units[unit_name]} handleUnitAdded={this.handleUnitAdded}/></div>
+    <UnitAvailableView key={unit_name} unit={this.state.available_units[unit_name]} handleUnitAdded={this.handleUnitAdded}/>
     );
     return (
       <div className="container">
@@ -393,6 +491,7 @@ export class Workspace extends React.Component {
           <div className="col">
           <p>Project: {this.props.project_name}</p>
           <button type="button" className="btn btn-primary" onClick={() => this.fetch_models()}>Load Models</button>
+          <FileInput handleUnitUpload={this.handleUnitUpload}></FileInput>
           </div>
         </div>
 
@@ -400,7 +499,7 @@ export class Workspace extends React.Component {
           <div className="col">
           <p>Model input</p>
           <p>Model can build: {model_can_build.toString()}</p>
-        <ContainerInputManualView inputs={this.state.container.inputs.usable} onChange={this.handleFieldChange}></ContainerInputManualView>
+        <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange}></ContainerInputManualView>
           </div>
         </div>
         
@@ -411,7 +510,9 @@ export class Workspace extends React.Component {
         </div>
 
         <div className="row">
+        <div className="col card-columns">
             {listItems}
+            </div>
         </div>
 
         <div className="row">
@@ -424,7 +525,7 @@ export class Workspace extends React.Component {
         <div className="row">
         <div className="col">
         <div className="card border-dark text-center mb-3 add-layer-box" >
-          <div class="card-body text-secondary" onClick={() => this.add_layer()}>
+          <div className="card-body text-secondary" onClick={() => this.add_layer()}>
             <h1>+</h1>
             <p>Add new layer</p>
           </div>

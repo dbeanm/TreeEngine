@@ -1,5 +1,5 @@
 import cytoscape from "cytoscape" //from "./cytoscape.esm.min.js"
-import compileExpression from "filtrex"
+import {compileExpression} from "filtrex"
 
 class AddLayerError extends Error {
 	constructor(message) {
@@ -44,6 +44,7 @@ export class Container {
 	}
 
 	add_unit_to_layer(layer_name, unit, unit_name = unit.name){
+		console.log("adding unit", unit_name, "to", layer_name, "the unit")
 		this.layers[layer_name].add_unit(unit, unit_name)
 		this.resolve_inputs()
 	}
@@ -292,12 +293,21 @@ export class EsynDecisionTree extends Model{
 		
 	}
 
-	load(model_json, network_name){
+	load(model_json, network_name, clear_blank_variable = true){
 		this.metadata = JSON.parse(model_json.metadata)
 		this.cy.add(JSON.parse(model_json[network_name]))
-		this.variables = this.metadata.variables
+		this.variables = this.metadata.variables //this.variables is compatible with TreeEngine
+		for(const v in this.variables){
+			this.variables[v].type = this.variables[v].value_type
+		}
+
+		if(clear_blank_variable){
+			//else conditions create a blank variable in esyn editor
+			delete this.variables['']
+		}
 		this.model_eval_log = []
 		for(const r of Object.keys(this.metadata.dt_rules)){
+			//console.log("adding rule", r, this.metadata.dt_rules[r])
 			this.add_rule(this.metadata.dt_rules[r])
 		}
 	}
@@ -325,7 +335,7 @@ export class EsynDecisionTree extends Model{
 		if(enforce_required == true){
 		    let all_vars = Object.keys(model_input)
 		    all_vars.forEach(function(el){
-				if( this.metadata.variables[el].required == true ){
+				if(this.metadata.variables.hasOwnProperty(el) && this.metadata.variables[el].required == true ){
 		        	let val = model_input[el]
 		        	let type = this.metadata.variables[el].value_type
 			        if ( type == 'num' && isNaN(val) || type == 'bool' && val === '' || type == 'str' && val == ''){
@@ -333,7 +343,7 @@ export class EsynDecisionTree extends Model{
 						this.model_eval_log.push("Missing required input: " + el)
 			        }
 				}
-		    })
+		    }, this)
 		}
 
 		//stop if input not valid
@@ -568,7 +578,7 @@ export class EsynDecisionTree extends Model{
 	        } else {
 	            not_valid_rules_state[el] = false
 	        }
-	    })
+	    }, this)
 
 	    //apply calculators to input
 	    let calculated_vars = Object.keys(calculated) //was _.keys
@@ -598,7 +608,7 @@ export class EsynDecisionTree extends Model{
 	        else {
 	            console.log('cannot process rule', el)
 	        }
-	    })
+	    }, this)
 	    return {'set_val_rules': set_val_rules, 'not_valid_rules': not_valid_rules}
 	}
 
@@ -617,7 +627,7 @@ export class EsynDecisionTree extends Model{
 	        } else {
 	            console.log('not running set-val rule', el)
 	        }
-	    })
+	    }, this)
 	    return calculated
 	}
 
