@@ -345,10 +345,19 @@ class FileInput extends React.Component {
     var reader = new FileReader();
 		//define function to run when reader is done loading the file
     reader.onloadend = () => {
-      let esyn_model = new EsynDecisionTree(JSON.parse(reader.result))
-      let esyn_unit = new Unit(fname, esyn_model)
-      this.props.handleUnitUpload(esyn_unit)
-      this.setState({content:esyn_unit})
+      if(this.props.mode == "EsynDecisionTree"){
+        let esyn_model = new EsynDecisionTree(JSON.parse(reader.result))
+        let esyn_unit = new Unit(fname, esyn_model)
+        this.props.handleUpload(esyn_unit)
+        this.setState({content:esyn_unit})
+      } else if(this.props.mode == "Workspace"){
+        let ws = JSON.parse(reader.result)
+        this.props.handleUpload(ws)
+        this.setState({content:ws})
+      } else {
+        console.log("upload type not implemented")
+      }
+      
     }
     reader.readAsText(this.fileInput.current.files[0])
   }
@@ -388,13 +397,15 @@ export class Workspace extends React.Component {
     this.state = {
       container: this.props.container,
       available_units: {},
-      user_input: all_inputs
+      user_input: all_inputs,
+      fileDownloadUrl: null
     }
     this.container = this.props.container
 
     this.handleUnitAdded = this.handleUnitAdded.bind(this);
     this.handleFieldChange = this.handleFieldChange.bind(this);
     this.handleUnitUpload = this.handleUnitUpload.bind(this);
+    this.handleWorkspaceUpload = this.handleWorkspaceUpload.bind(this);
 
   }
   static defaultProps = {
@@ -426,12 +437,76 @@ export class Workspace extends React.Component {
     this.setState({available_units: au})
   }
 
+  handleWorkspaceUpload(ws){
+    console.log("uploaded workspace", ws)
+    //create Unit of correct type for every unit in .available_units
+    const au = {}
+    let m, u, mj
+    for(const [au_name, au_data] of Object.entries(ws.available_units)){
+      if(au_data.model_class == 'DummyModel'){
+        console.log("TODO save/load methods for DummyModel")
+        //m = new DummyModel()
+        //u = new Unit(au_name, m)
+      } else if(au_data.model_class == 'EsynDecisionTree'){
+        m = new EsynDecisionTree(au_data.model.model_json, au_data.model.network_name)
+        u = new Unit(au_name, m)
+        au[au_name] = u
+      } else {
+        console.log("cannot load model with class", au_data.model_class)
+      }
+    }
+
+    //load the container
+    let c = new Container([], ws.project_name)
+    c.load(ws.container)
+
+    //user inputs
+    let all_inputs = {}
+    for (const key of Object.keys(c.inputs.usable)) {
+      if(!this.state.user_input.hasOwnProperty(key)){
+        all_inputs[key] = Object.assign({ 'value':undefined}, c.inputs.usable[key])
+      }
+    }
+    
+    //set workspace state
+    this.setState({'available_units': au, 'container': c, 'user_input': all_inputs})
+  }
+
   handleFieldChange(fieldId, value) {
     //console.log("handlefieldchange", fieldId, value)
     let s = this.state.user_input
     s[fieldId].value = value
     //console.log(s)
     this.setState({ user_input: s});
+  }
+
+  download_workspace(){
+    //const ws = JSON.stringify(this.state)
+    const container_string = this.state.container.save()
+    const ws = {}
+    ws['container'] = container_string
+    //console.log(ws)
+    //console.log(JSON.stringify(ws))
+
+    const au = {}
+    let s
+    for(const u in this.state.available_units){
+      s = this.state.available_units[u].save()
+      au[u] = s 
+    }
+    //console.log(au)
+    //console.log(JSON.stringify(au))
+    ws['available_units'] = au
+    ws['project_name'] = "My project name"
+    const dl = JSON.stringify(ws)
+    const blob = new Blob([dl]);
+    const fileDownloadUrl = URL.createObjectURL(blob);
+    this.setState ({fileDownloadUrl: fileDownloadUrl}, 
+      () => {
+        this.dofileDownload.click(); 
+        URL.revokeObjectURL(fileDownloadUrl);  // free up storage--no longer needed.
+        this.setState({fileDownloadUrl: ""})
+    })
   }
 
   fetch_models(){
@@ -489,9 +564,12 @@ export class Workspace extends React.Component {
       <div className="container">
         <div className="row">
           <div className="col">
-          <p>Project: {this.props.project_name}</p>
+          <p>Project: {this.state.container.name}</p>
           <button type="button" className="btn btn-primary" onClick={() => this.fetch_models()}>Load Models</button>
-          <FileInput handleUnitUpload={this.handleUnitUpload}></FileInput>
+          <button type="button" className="btn btn-primary" onClick={() => this.download_workspace()}>Save</button>
+          <a className="hidden" download="Workspace.json" href={this.state.fileDownloadUrl} ref={e=>this.dofileDownload = e}>download it</a>
+          <FileInput mode="EsynDecisionTree" handleUpload={this.handleUnitUpload}></FileInput>
+          <FileInput mode="Workspace" handleUpload={this.handleWorkspaceUpload}></FileInput>
           </div>
         </div>
 

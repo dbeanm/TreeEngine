@@ -51,7 +51,7 @@ let l1 = new Layer('layer1')
 let c = new Container([l1])
 
 ReactDOM.render(
-  <Workspace project_name={'my new project'} container={c}/>,
+  <Workspace container={c}/>,
   document.getElementById('root4')
 );
 

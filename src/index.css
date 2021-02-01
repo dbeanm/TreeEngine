@@ -35,3 +35,7 @@ code {
   table-layout: fixed;
   width: 100%;
 }
+
+.hidden {
+  display: none;
+}

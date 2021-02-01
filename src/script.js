@@ -20,15 +20,39 @@ Once a layer has been added to a container it should not be edited directly
 instead use the container functions to control the layer, which guarantees the container also updates
 */
 export class Container {
-	constructor(layers = []){
+	constructor(layers = [], name = ""){
 		this.layers = {}
 		this.layer_order = []
 		this.state = {}
 		this.variables = {}
 		this.inputs = {'conflict': {}, 'usable': {}}
+		this.name = name
 		for(const l of layers){
 			//for...of will be in order, for...in is not guaranteed to be
 			this.add_layer(l)
+		}
+	}
+
+	save(){
+		//get a JSON string representation that can be loaded
+		let s = {}
+		s['layer_order'] = this.layer_order
+		s['layers'] = {}
+		for(const k in this.layers){
+			s['layers'][k] = this.layers[k].save()
+		}
+		//return JSON.stringify(s)
+		return s
+	}
+
+	load(config){
+		let ld
+		let loaded_layer
+		for(const l of config.layer_order){
+			ld = config.layers[l]
+			loaded_layer = new Layer(l)
+			loaded_layer.load(ld)
+			this.add_layer(loaded_layer)
 		}
 	}
 
@@ -116,6 +140,29 @@ export class Layer {
 		this.size = 0
 		//each variable {name : {type}}
 
+	}
+
+	save(){
+		//get a JSON string representation that can be loaded
+		let s = {}
+		s['name'] = this.name
+		s['units'] = {}
+		for(const k in this.units){
+			s['units'][k] = this.units[k].save()
+		}
+		//return JSON.stringify(s)
+		return s
+	}
+
+	load(config){
+		let m, u
+		for(const [unit_name, unit_data] of Object.entries(config.units)){
+			if(unit_data.model_class == "EsynDecisionTree"){
+				m = new EsynDecisionTree(unit_data.model.model_json, unit_data.model.network_name)
+				u = new Unit(unit_name, m)
+				this.add_unit(u)
+			}
+		}
 	}
 
 	add_unit(unit, unit_name = unit.name ) {
@@ -215,6 +262,16 @@ export class Unit {
 		let result = this.model.run(input)
 		return result
 	}
+
+	save(){
+		//get a json representation of the unit that can be loaded
+		let s = {}
+		s['name'] = this.name
+		s['model'] = this.model.save()
+		s['model_class'] = this.model.constructor.name
+		//return JSON.stringify(s)
+		return s
+	}
 }
 
 export class Model {
@@ -224,6 +281,11 @@ export class Model {
 
 	run(input){
 		return new ModelState()
+	}
+
+	save(){
+		//get a json representation that can be loaded to get this model back
+		return Object.assign({}, this)
 	}
 }
 
@@ -289,13 +351,32 @@ export class EsynDecisionTree extends Model{
 		this.cy = cytoscape({
 		  headless: true
 		});
+		this.network_name = network_name
+		this.model_json = model_json
 		this.load(model_json, network_name)
 		
 	}
 
+	save(){
+		//override the base class .save with a customised version
+		let s = {}
+		// s['model_json'] = this.model_json
+		// return JSON.stringify(s)
+		s[this.network_name] = this.cy.json()
+		s['metadata'] = this.metadata
+		let r = {'model_json': s, 'network_name': this.network_name}
+		return r
+	}
+
 	load(model_json, network_name, clear_blank_variable = true){
-		this.metadata = JSON.parse(model_json.metadata)
-		this.cy.add(JSON.parse(model_json[network_name]))
+		if(typeof model_json.metadata == 'string'){
+			model_json.metadata = JSON.parse(model_json.metadata)
+		}
+		if(typeof model_json[network_name] == 'string'){
+			model_json[network_name] = JSON.parse(model_json[network_name])
+		}
+		this.metadata = model_json.metadata
+		this.cy.add(model_json[network_name])
 		this.variables = this.metadata.variables //this.variables is compatible with TreeEngine
 		for(const v in this.variables){
 			this.variables[v].type = this.variables[v].value_type
