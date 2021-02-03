@@ -869,6 +869,12 @@ export class ToolView extends React.Component {
       </div>
     </nav>
     <Workspace container={this.props.container}></Workspace>
+
+    <div className='row mt-1'>
+      <div className='col'>
+      &#169; Copyright 2021 Dan Bean
+      </div>
+    </div>
     </div>
     );
   }
