@@ -274,7 +274,7 @@ export class Unit {
 		let s = {}
 		s['name'] = this.name
 		s['model'] = this.model.save()
-		s['model_class'] = this.model.constructor.name
+		s['model_class'] = this.model.model_class
 		//return JSON.stringify(s)
 		return s
 	}
@@ -283,6 +283,7 @@ export class Unit {
 export class Model {
 	constructor(variables = {}){
 		this.variables = variables
+		this.model_class = "Base"
 	}
 
 	run(input){
@@ -299,6 +300,7 @@ export class QuickTree extends Model{
 	//load a graph from edge list, .run() gives a random path from .run({start: node})
 	constructor(edges){
 		super({'start': {'type':'str'}})
+		this.model_class = "QuickTree"
 		this.tree = new Tree(edges)
 	}
 
@@ -354,6 +356,7 @@ export class EsynDecisionTree extends Model{
 		//model_json: content of file downloaded from esyn
 		//network_name: specific network within the file to run
 		super()
+		this.model_class = "EsynDecisionTree"
 		this.cy = cytoscape({
 		  headless: true
 		});
@@ -773,6 +776,7 @@ export class ModelState {
 export class DummyModel extends Model{
 	constructor(num_variables = [], bool_variables = []){
 		super()
+		this.model_class = "DummyModel"
 		//normally the variables would be inferred from the graph 
 		//for testing just set them in constructor since there is no graph
 		this.variables = this.configure_variables(num_variables, bool_variables)
