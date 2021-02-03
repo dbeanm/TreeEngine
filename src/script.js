@@ -41,6 +41,7 @@ export class Container {
 		for(const k in this.layers){
 			s['layers'][k] = this.layers[k].save()
 		}
+		s['name'] = this.name
 		//return JSON.stringify(s)
 		return s
 	}
@@ -48,7 +49,9 @@ export class Container {
 	load(config){
 		let ld
 		let loaded_layer
+		this.name = config.name
 		for(const l of config.layer_order){
+			console.log("Container loading layer", l)
 			ld = config.layers[l]
 			loaded_layer = new Layer(l)
 			loaded_layer.load(ld)
@@ -68,7 +71,7 @@ export class Container {
 	}
 
 	add_unit_to_layer(layer_name, unit, unit_name = unit.name){
-		console.log("adding unit", unit_name, "to", layer_name, "the unit")
+		console.log(`adding unit ${unit.name} to ${layer_name} with name ${unit_name}`)
 		this.layers[layer_name].add_unit(unit, unit_name)
 		this.resolve_inputs()
 	}
@@ -155,6 +158,7 @@ export class Layer {
 	}
 
 	load(config){
+		console.log("layer loading from config")
 		let m, u
 		for(const [unit_name, unit_data] of Object.entries(config.units)){
 			if(unit_data.model_class == "EsynDecisionTree"){
@@ -227,18 +231,20 @@ export class Layer {
 		// scoped = {Unit name : {variables}} to overwrite or supplement global inputs
 		// scoped variables are needed if there are conflicting inputs between layers
 		let results = {}
+		let states = {}
 		this.reset_state()
 		for (const [key, value] of Object.entries(this.units)) {
 		  console.log(`run ${key}`);
 		  let this_unit_input = this.handle_input(key, all, scoped)
 		  let res = value.run(this_unit_input)
+		  states[key] = res
 		  if(res.is_ok()){
 		  	results[key] = res.value
 		  } else {
 		  	console.log("Error in unit", key, "state", res)
 		  }
 		}
-		this.state = results
+		this.state = states //results
 		return results
 	}
 
@@ -362,7 +368,7 @@ export class EsynDecisionTree extends Model{
 		let s = {}
 		// s['model_json'] = this.model_json
 		// return JSON.stringify(s)
-		s[this.network_name] = this.cy.json()
+		s[this.network_name] = this.cy.json()['elements']
 		s['metadata'] = this.metadata
 		let r = {'model_json': s, 'network_name': this.network_name}
 		return r
@@ -449,13 +455,15 @@ export class EsynDecisionTree extends Model{
 
 	run(input, missing_action = 'highlight', use_calculators = true, enforce_required = true){
 		let checks = this.pre_run_checks(input, use_calculators, enforce_required)
-
+		console.log("pre run checks", checks)
 		let result = new ModelState()
 		let model_input = checks.model_input;
 		if(checks.can_run){			
 			let root_node = checks.root
 			let traversal = this.traverse_from(root_node, model_input)
+			console.log("traversal result", traversal)
 			let result_is_leaf = traversal.next_node.leaves().length == 1
+			//console.log("result is leaf", result_is_leaf, traversal.next_node.leaves().length)
 			if(result_is_leaf){
 				result.set_ok(traversal.next_node.data('name'))
 			} else {
@@ -466,6 +474,7 @@ export class EsynDecisionTree extends Model{
 			//cannot run model at all
 			result.set_error("cannot run")
 		}
+		console.log(result)
 		return result
 	}
 
@@ -478,12 +487,14 @@ export class EsynDecisionTree extends Model{
 		let path_nodes = [root_node.id()]
 		let path_edges = []
 		let next_node = root_node //needed in case evaluation stops at root
+		let next_src
 		while(reachable_ids.length == 1){
-			let next_src = reachable_ids[0]
+			next_src = reachable_ids[0]
 			console.log("continue to", next_src)
-			let next_node = this.cy.$('#' + next_src)
+			next_node = this.cy.$('#' + next_src)
+			//console.log("node", next_node,"is leaf", next_node.leaves().length)
 			path_nodes.push(next_src)
-			path_edges = path_edges.concat(can_reach[next_src])
+			path_edges = path_edges.concat(can_reach.reachable_ids[next_src])
 			options = this.get_targets_from(next_node)
 
 			can_reach = this.conditions_met(next_node, options, user_input)

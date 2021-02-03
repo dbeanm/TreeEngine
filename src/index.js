@@ -5,7 +5,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 import ReactDOM from 'react-dom';
 import './index.css';
 import {DummyModel, Unit, Layer, Container} from './script.js'
-import {UnitView, LayerView, ContainerView, Workspace} from './App';
+import {UnitView, LayerView, ContainerView, Workspace, ToolView} from './App';
 import reportWebVitals from './reportWebVitals';
 
 // ReactDOM.render(
@@ -47,11 +47,11 @@ import reportWebVitals from './reportWebVitals';
 //   document.getElementById('root4')
 // );
 
-let l1 = new Layer('layer1')
-let c = new Container([l1])
+// let l1 = new Layer('layer1')
+let c = new Container([])
 
 ReactDOM.render(
-  <Workspace container={c}/>,
+  <ToolView container={c}/>,
   document.getElementById('root4')
 );
 
