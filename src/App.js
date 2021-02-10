@@ -300,8 +300,9 @@ export class ContainerInputManualView extends React.Component {
   handleChange(event) {    
     const target = event.target;
     let value
-    if(target.type === 'checkbox'){
-      value = target.checked
+ 
+    if(target.type === 'radio'){
+      value = target.value
     } else if(target.type === 'number') {
       value = parseFloat(target.value)
     } else {
@@ -668,7 +669,18 @@ export class Workspace extends React.Component {
     for (const key in this.state.user_input) {
       if (this.state.user_input.hasOwnProperty(key)) {
         const element = this.state.user_input[key];
-        input[key] = element.value
+        if(element.type == "bool"){
+          if(element.value == "True"){
+            input[key] = true
+          } else if (element.value == "False"){
+            input[key] = false
+          } else {
+            input[key] = "" //as in esyn engine
+          }
+        } else {
+          //str and int are already the correct type
+          input[key] = element.value
+        }
       }
     }
     const result = this.state.container.run(input)

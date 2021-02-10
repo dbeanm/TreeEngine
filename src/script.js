@@ -163,8 +163,8 @@ export class Layer {
 		for(const [unit_name, unit_data] of Object.entries(config.units)){
 			if(unit_data.model_class == "EsynDecisionTree"){
 				m = new EsynDecisionTree(unit_data.model.model_json, unit_data.model.network_name)
-				u = new Unit(unit_name, m)
-				this.add_unit(u)
+				u = new Unit(unit_data.name, m) //unit_data.name is the internal model name, unit_name is the name for this unit in the layer
+				this.add_unit(u, unit_name)
 			}
 		}
 	}
