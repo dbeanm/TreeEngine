@@ -33,6 +33,7 @@ export class UnitView extends React.Component {
       <div>
         <p>Unit Name: {this.props.unit_name}</p>
         <p>Model Name: {this.props.unit.name}</p>
+        <p>Output type: {this.props.unit.output_type}</p>
         <p>Unit Varaibles:</p>
         <ul>
           {listItems}
@@ -55,7 +56,7 @@ export class ModelStateView extends React.Component {
   render() {
     const status = this.props.modelstate.status
     const msg = this.props.modelstate.message
-    const val = this.props.modelstate.value
+    const val = String(this.props.modelstate.value)
     return (
       <p>
       Unit result: {status}, {val} ({msg})
@@ -87,6 +88,7 @@ export class UnitAvailableView extends React.Component {
         {this.props.unit.name}
       </div>
       <div className="card-body">
+      <p>Output type: {this.props.unit.output_type}</p>
       <p>Unit Varaibles:</p>
         <ul>
           {listItems}

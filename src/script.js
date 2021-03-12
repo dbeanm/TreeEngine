@@ -164,6 +164,7 @@ export class Layer {
 			if(unit_data.model_class == "EsynDecisionTree"){
 				m = new EsynDecisionTree(unit_data.model.model_json, unit_data.model.network_name)
 				u = new Unit(unit_data.name, m) //unit_data.name is the internal model name, unit_name is the name for this unit in the layer
+				u.set_output_type(unit_data.output_type)
 				this.add_unit(u, unit_name)
 			}
 		}
@@ -259,6 +260,7 @@ export class Unit {
 		this.name = name
 		this.model = model
 		this.variables = this.model.variables //must be unique, i.e. no separate this.inputs required
+		this.output_type = this.model.output_type //default to the type of the model, can be edited later
 		// some sort of this.load_graph method should run now
 	}
 
@@ -266,6 +268,8 @@ export class Unit {
 		//in a real tree run will contain the logic to run, the model itself will not have a run method
 		console.log(`${this.name} running with`, input)
 		let result = this.model.run(input)
+		let result_converted = this.convert_output(result)
+		result.value = result_converted
 		return result
 	}
 
@@ -275,15 +279,55 @@ export class Unit {
 		s['name'] = this.name
 		s['model'] = this.model.save()
 		s['model_class'] = this.model.model_class
+		s['output_type'] = this.output_type
 		//return JSON.stringify(s)
 		return s
+	}
+
+	set_output_type(type){
+		//call with undefined type to reset to the Model defined type
+		this.output_type = type
+		if(type == "" || type === undefined){
+			this.output_type = this.model.output_type
+		}
+	}
+
+	convert_output(model_result){
+		//possible true values are the number 1 or the string "true" with any captialisation
+		let val2
+		const val = model_result.value
+		const input_type = typeof(val);
+		if(this.output_type == "str"){
+			val2 = String(val)
+		}
+		
+		else if(this.output_type == "num"){
+			val2 = parseFloat(val)
+		}
+
+		else if(this.output_type == "bool"){
+			//for Bool we do our own conversion because any string in js is True, as is any number other than 0
+			if(input_type === "string"){
+				val2 = (val.toLowerCase() === 'true')
+			}
+			if(input_type === "number"){
+				val2 = (val === 1)
+			}
+		} else {
+			console.log("output type not valid", this.output_type)
+			val2 = val
+		}
+		return val2
 	}
 }
 
 export class Model {
+	//models can specify their output type but this cannot be changed once loaded
+	//Units can override the output type set internally by the model.
 	constructor(variables = {}){
 		this.variables = variables
 		this.model_class = "Base"
+		this.output_type = "str" //by default, outputs are treated as strings
 	}
 
 	run(input){
@@ -400,6 +444,14 @@ export class EsynDecisionTree extends Model{
 			//console.log("adding rule", r, this.metadata.dt_rules[r])
 			this.add_rule(this.metadata.dt_rules[r])
 		}
+
+		//set the model output type to that in the model file if it exists
+		//older model format did not require this property
+		//nb can be overridden by the parent Unit
+		if(this.metadata.hasOwnProperty('output_type')){
+			this.output_type = this.metadata.output_type
+		}
+
 	}
 
 	pre_run_checks(input, use_calculators = true, enforce_required = true) {
