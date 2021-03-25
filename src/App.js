@@ -1,5 +1,7 @@
 import React from 'react';
 import {Unit, Layer, DummyModel, Container, EsynDecisionTree, ModelState} from './script.js';
+import CytoscapeComponent from 'react-cytoscapejs';
+import cytoscape from "cytoscape";
 
 function ListItem(props) {
   // Correct! There is no need to specify the key here:
@@ -125,7 +127,7 @@ export class UnitAdderView extends React.Component {
       <form onSubmit={this.handleSubmit}>
         <div className="form-group row">
         <label htmlFor='adder-unit-select' className="col-sm-2 col-form-label">
-        Add unit 
+        Add Unit 
         </label>
         <div className="col-sm-10">
         <select id='adder-unit-select' className="custom-select" onChange={this.handleChange} name="unit">
@@ -136,7 +138,7 @@ export class UnitAdderView extends React.Component {
 
         <div className="form-group row">
         <label htmlFor='adder-layer-select' className="col-sm-2 col-form-label">
-        To layer 
+        To Layer
         </label>
         <div className="col-sm-10">
         <select id='adder-layer-select' className="custom-select" onChange={this.handleChange} name="layer">
@@ -160,6 +162,188 @@ export class UnitAdderView extends React.Component {
   }
 }
 
+export class GraphContainerNodeControls extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    let els = event.target.elements
+    const l = els.layer.value
+    const u = els.unit.value
+    const n = els.name.value == "" ? u : els.name.value
+    console.log(`send request to add ${u} to ${l} with name ${n}`)
+    this.props.handleUnitAdded(u, l, n)
+  }
+
+  render() {
+    const layeropts = this.props.layers.map((x) => <option key={x}>{x}</option>)
+    const unitopts = this.props.units.map((x) => <option key={x}>{x}</option>)
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <div className="form-group row">
+        <label htmlFor='adder-unit-select' className="col-sm-2 col-form-label">
+        Add Unit 
+        </label>
+        <div className="col-sm-10">
+        <select id='adder-unit-select' className="custom-select" onChange={this.handleChange} name="unit">
+          {unitopts}
+        </select>
+        </div>
+        </div>
+
+        <div className="form-group row">
+        <label htmlFor='adder-layer-select' className="col-sm-2 col-form-label">
+        To Compute Node
+        </label>
+        <div className="col-sm-10">
+        <select id='adder-layer-select' className="custom-select" onChange={this.handleChange} name="layer">
+          {layeropts}
+        </select> 
+        </div>
+        </div>
+
+        <div className="form-group row">
+        <label htmlFor='adder-name-select' className="col-sm-2 col-form-label">
+        With name
+        </label>
+        <div className="col-sm-10">
+        <input type="text" name="name" id='adder-name-select' className="form-control"></input>
+        </div>
+        </div>
+
+        <input type="submit" value="Add to model" className="btn btn-primary btn-block"/>
+      </form>
+    );
+  }
+}
+
+export class GraphContainerEdgeControls extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    let els = event.target.elements
+    const s = els.layer1.value
+    const t = els.layer2.value
+
+    this.props.handleEdgeAdded(s, t)
+  }
+
+  render() {
+    const layeropts = this.props.layers.map((x) => <option key={x}>{x}</option>)
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <div className="form-group row">
+        <label htmlFor='adder-unit-select' className="col-sm-2 col-form-label">
+        Source
+        </label>
+        <div className="col-sm-10">
+        <select id='adder-unit-select' className="custom-select" onChange={this.handleChange} name="layer1">
+          {layeropts}
+        </select>
+        </div>
+        </div>
+
+        <div className="form-group row">
+        <label htmlFor='adder-layer-select' className="col-sm-2 col-form-label">
+        Target
+        </label>
+        <div className="col-sm-10">
+        <select id='adder-layer-select' className="custom-select" onChange={this.handleChange} name="layer2">
+          {layeropts}
+        </select> 
+        </div>
+        </div>
+
+        <input type="submit" value="Add to model" className="btn btn-primary btn-block"/>
+      </form>
+    );
+  }
+}
+
+export class GraphContainerConditionControls extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleChange = this.handleChange.bind(this);
+    this.state ={
+      type:"blank",
+    }
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    let els = event.target.elements
+    const s = els.layer1.value
+    const t = els.layer2.value
+
+    this.props.handleConditionAdded(s, t)
+  }
+
+  handleChange(event){
+    const target = event.target;
+
+    const name = target.value;
+    let type
+    console.log("checking type for ", name)
+    if(this.props.variables.hasOwnProperty(name)){
+      type = this.props.variables[name].type
+    } else {
+      type = 'blank'
+    }
+    
+    this.setState({type: type})
+  }
+
+  render() {
+    const variable_opts = Object.keys(this.props.variables).map((x) => <option key={x}>{x}</option>)
+    const ops = ['=', '!=', '>', '>=', '<', '<=']
+    const operator_opts = ops.map((x) => <option key={x}>{x}</option>)
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <div className="form-group row">
+        <label htmlFor='cond-var-select' className="col-sm-2 col-form-label">
+        Variable
+        </label>
+        <div className="col-sm-10">
+        <select id='cond-var-select' className="custom-select" onChange={this.handleChange} name="variable_name">
+          <option></option>
+          {variable_opts}
+        </select>
+        </div>
+        </div>
+
+        <div className="form-group row">
+        <label htmlFor='cond-op-select' className="col-sm-2 col-form-label">
+        Operator
+        </label>
+        <div className="col-sm-10">
+        <select id='cond-op-select' className="custom-select" name="variable_name">
+          {operator_opts}
+        </select>
+        </div>
+        </div>
+
+        <div className="form-group row">
+        <label htmlFor='cond-val-select' className="col-sm-2 col-form-label">
+        Value
+        </label>
+        <div className="col-sm-10">
+        <TypedInputView type={this.state.type} name={'variable_value'}></TypedInputView>
+        </div>
+        </div>
+
+        <input type="submit" value="Add to model" className="btn btn-primary btn-block"/>
+      </form>
+    );
+  }
+}
 
 export class ListAvailableUnits extends React.Component {
   constructor(props) {
@@ -464,6 +648,75 @@ class FileInput extends React.Component {
   }
 }
 
+export class TypedInputView extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    const element = this.props.selected;
+    const type = this.props.type
+    const name = this.props.name
+    const id_true = `${name}_true`
+    const id_false = `${name}_false`
+    const id_unknown = `${name}_unknown`
+    let in_el
+
+    if(type == "num"){
+      in_el = <input type="number" name={name} className="form-check-input" />
+    } else if(type == 'bool'){
+      in_el = (<div>
+        <div className="form-check">
+        <input
+          id={id_true}
+          type="radio"
+          name={name}
+          value="True"
+          className="form-check-input"
+        />
+        <label htmlFor={id_true} className="form-check-label">
+        True
+      </label>
+      </div>
+      
+      <div className="form-check">
+      <input
+        id={id_false}
+        type="radio"
+        name={name}
+        value="False"
+        className="form-check-input"
+      />
+      <label htmlFor={id_false} className="form-check-label">
+      False
+    </label>
+    </div>
+    
+    <div className="form-check">
+    <input
+      id={id_unknown}
+      type="radio"
+      name={name}
+      value="Unknown"
+      className="form-check-input"
+    />
+    <label htmlFor={id_unknown} className="form-check-label">
+    Unknown
+    </label>
+    </div>
+    </div>)
+    } else if(type=='str'){
+      in_el = <input type="text" name={name} className="form-check-input" />
+    } else {
+      in_el = <input type="text" name={name} className="form-check-input" disabled='disabled'/>
+    }
+    return (
+      in_el
+    )
+  }
+}
+
+
 export class Workspace extends React.Component {
   constructor(props) {
     super(props);
@@ -485,11 +738,14 @@ export class Workspace extends React.Component {
       container: this.props.container,
       available_units: {},
       user_input: all_inputs,
-      fileDownloadUrl: null
+      fileDownloadUrl: null,
+      selected_node_name: "",
+      selected_node: undefined
     }
     //this.container = this.props.container
 
     this.handleUnitAdded = this.handleUnitAdded.bind(this);
+    this.handleEdgeAdded = this.handleEdgeAdded.bind(this);
     this.handleFieldChange = this.handleFieldChange.bind(this);
     this.handleUnitUpload = this.handleUnitUpload.bind(this);
     this.handleWorkspaceUpload = this.handleWorkspaceUpload.bind(this);
@@ -534,6 +790,16 @@ export class Workspace extends React.Component {
   
       this.setState({container: c, user_input: all_inputs})
     }
+  }
+
+  handleEdgeAdded(source_layer, target_layer){
+    let c = this.state.container
+    let can_add = true
+
+    c.add_edge(source_layer, target_layer, [])
+
+    this.setState({container: c})
+    
   }
 
   handleUnitUpload(unit){
@@ -603,6 +869,10 @@ export class Workspace extends React.Component {
       delete au[unit_key]
       this.setState({available_units: au})
     }
+  }
+
+  handleNodeSelected(node){
+    this.setState({selected_node: node, selected_node_name: node.id()})
   }
 
   download_workspace(){
@@ -702,6 +972,8 @@ export class Workspace extends React.Component {
     const project_name = this.state.container.name
     const n_available_units = Object.keys(this.state.available_units).length
 
+    const graph_els = this.state.container.graph_els
+
     const listItems = Object.keys(this.state.available_units).map((unit_name) =>
     <UnitAvailableView key={unit_name} unit_key={unit_name} unit={this.state.available_units[unit_name]} handleDelete={this.handleAvailableUnitDeleted} />
     
@@ -729,6 +1001,7 @@ export class Workspace extends React.Component {
             <a class="nav-item nav-link" id="nav-user-input-tab" data-toggle="tab" href="#nav-user-input" role="tab" aria-controls="nav-user-input" aria-selected="false">Model Input {input_badge}</a>
             <a class="nav-item nav-link" id="nav-save-workspace-tab" data-toggle="tab" href="#nav-save-workspace" role="tab" aria-controls="nav-save-workspace" aria-selected="false">Save/Load</a>
             <a class="nav-item nav-link" id="nav-testing-tab" data-toggle="tab" href="#nav-testing" role="tab" aria-controls="nav-testing" aria-selected="false">Testing</a>
+            <a class="nav-item nav-link" id="nav-cytoscape-tab" data-toggle="tab" href="#nav-graph" role="tab" aria-controls="nav-graph" aria-selected="false">Graph</a>
           </div>
         </nav>
         </div>
@@ -790,6 +1063,84 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
           <div className="col">
           <button type="button" className="btn btn-primary" onClick={() => this.fetch_models()}>Load dummy models to workspace</button>
+          </div>
+          </div>
+          </div>
+
+          <div class="tab-pane fade" id="nav-graph" role="tabpanel" aria-labelledby="nav-graph-tab">
+          <div className="row mt-1">
+          <div className="col">
+            <CytoscapeComponent
+              elements={graph_els} 
+              style={ { width: '600px', height: '600px', backgroundColor: "lightblue"} }
+              cy={cy => {
+                cy.unbind("tap"); //unbinding is necessary or get one listener per node added
+                cy.on('tap', 'node', evt => {
+                  var node = evt.target;
+                  this.handleNodeSelected(node)
+                });
+              }
+              }
+              stylesheet={[
+                {
+                  selector: 'node',
+                  style: {
+                    label: 'data(label)'
+                  }
+                },
+                {
+                  selector: 'node.labelnode',
+                  style: {
+                    
+                    content: 'data(label)', // maps node label to data.conditions_label
+                    'shape': 'square',
+                    'text-wrap': 'wrap',
+                    'text-max-width': 200,
+                    'width': 20,
+                    'height': 20,
+                    'text-background-color': '#FFFFFF',
+                    'text-background-opacity': 1,
+                    'text-background-padding': 3
+                    
+                  }
+                },
+                {
+                  selector: 'edge',
+                  style: {
+                    'width': 3,
+                    'line-color': '#000',
+                  }
+                },
+                {
+                  selector: 'edge.directed',
+                  style: {
+                    'target-arrow-shape': 'triangle',
+                    'source-arrow-color': '#000000',
+                    'target-arrow-color': '#000000'
+                  }
+                }
+              ]}
+              
+            />
+          </div>
+          <div className="col">
+            <p>Selected node: {this.state.selected_node_name}</p>
+              <button type="button" onClick={() => this.add_layer()}>Add Compute Node</button>
+              <h4>Add unit to model</h4>
+                <GraphContainerNodeControls handleUnitAdded={this.handleUnitAdded} layers={this.state.container.layer_order} units={Object.keys(this.state.available_units)}></GraphContainerNodeControls>
+              
+                <h4>Add edge to model</h4>
+                <GraphContainerEdgeControls handleEdgeAdded={this.handleEdgeAdded} layers={this.state.container.layer_order}></GraphContainerEdgeControls>
+
+                <h4>Conditions</h4>
+                <GraphContainerConditionControls 
+                handleConditionAdded={this.handleConditionAdded} 
+                current_node={this.state.selected_node}
+                variables={this.state.user_input}
+                >
+
+                </GraphContainerConditionControls>
+
           </div>
           </div>
           </div>

@@ -4,7 +4,7 @@ import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import ReactDOM from 'react-dom';
 import './index.css';
-import {DummyModel, Unit, Layer, Container} from './script.js'
+import {DummyModel, Unit, Layer, Container, GraphContainer} from './script.js'
 import {UnitView, LayerView, ContainerView, Workspace, ToolView} from './App';
 import reportWebVitals from './reportWebVitals';
 
@@ -48,7 +48,9 @@ import reportWebVitals from './reportWebVitals';
 // );
 
 // let l1 = new Layer('layer1')
-let c = new Container([])
+
+//let c = new Container([])
+let c = new GraphContainer()
 
 ReactDOM.render(
   <ToolView container={c}/>,
