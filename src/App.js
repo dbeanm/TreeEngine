@@ -272,18 +272,24 @@ export class GraphContainerConditionControls extends React.Component {
     super(props);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
+    this.handleValueChange = this.handleValueChange.bind(this);
     this.state ={
       type:"blank",
+      condition_value: undefined
     }
   }
 
   handleSubmit(event) {
     event.preventDefault();
     let els = event.target.elements
-    const s = els.layer1.value
-    const t = els.layer2.value
+    const variable = els['cond-var-select'].value
+    const operation = els['cond-op-select'].value
+    const value = this.state.condition_value
+    this.props.handleConditionAdded(variable, operation, value)
+  }
 
-    this.props.handleConditionAdded(s, t)
+  handleValueChange(value) {
+    this.setState({'condition_value': value})
   }
 
   handleChange(event){
@@ -335,7 +341,11 @@ export class GraphContainerConditionControls extends React.Component {
         Value
         </label>
         <div className="col-sm-10">
-        <TypedInputView type={this.state.type} name={'variable_value'}></TypedInputView>
+        <TypedInputView type={this.state.type} 
+        name={'variable_value'} 
+        value={this.state.condition_value} 
+        onChange={this.handleValueChange}
+        ></TypedInputView>
         </div>
         </div>
 
@@ -651,20 +661,40 @@ class FileInput extends React.Component {
 export class TypedInputView extends React.Component {
   constructor(props) {
     super(props);
+    this.handleChange = this.handleChange.bind(this)
+  }
+
+  handleChange(event) {    
+    const target = event.target;
+    let value
+    console.log("TIV", target.type)
+    console.log("TIV value", target.value)
+ 
+    if(target.type === 'radio'){
+      value = target.value
+    } else if(target.type === 'number') {
+      value = parseFloat(target.value)
+    } else {
+      value = target.value
+    }
+
+    const name = target.name;
+    //console.log('handlechange', name, value)
+    this.props.onChange(value);
   }
 
   render() {
-    const element = this.props.selected;
     const type = this.props.type
     const name = this.props.name
+    const value = this.props.value
     const id_true = `${name}_true`
     const id_false = `${name}_false`
     const id_unknown = `${name}_unknown`
     let in_el
 
     if(type == "num"){
-      in_el = <input type="number" name={name} className="form-check-input" />
-    } else if(type == 'bool'){
+      in_el = <input type="number" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
+  } else if(type == 'bool'){
       in_el = (<div>
         <div className="form-check">
         <input
@@ -672,7 +702,9 @@ export class TypedInputView extends React.Component {
           type="radio"
           name={name}
           value="True"
+          checked={value === "True"}
           className="form-check-input"
+          onChange={this.handleChange} 
         />
         <label htmlFor={id_true} className="form-check-label">
         True
@@ -685,7 +717,9 @@ export class TypedInputView extends React.Component {
         type="radio"
         name={name}
         value="False"
+        checked={value === "False"}
         className="form-check-input"
+        onChange={this.handleChange} 
       />
       <label htmlFor={id_false} className="form-check-label">
       False
@@ -698,15 +732,17 @@ export class TypedInputView extends React.Component {
       type="radio"
       name={name}
       value="Unknown"
+      checked={value === "Unknown"}
       className="form-check-input"
+      onChange={this.handleChange} 
     />
     <label htmlFor={id_unknown} className="form-check-label">
     Unknown
-    </label>
-    </div>
-    </div>)
-    } else if(type=='str'){
-      in_el = <input type="text" name={name} className="form-check-input" />
+  </label>
+  </div>
+  </div>)
+  } else if(type=='str'){
+      in_el = <input type="text" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
     } else {
       in_el = <input type="text" name={name} className="form-check-input" disabled='disabled'/>
     }
@@ -751,6 +787,7 @@ export class Workspace extends React.Component {
     this.handleWorkspaceUpload = this.handleWorkspaceUpload.bind(this);
     this.handleProjectNameChange = this.handleProjectNameChange.bind(this);
     this.handleAvailableUnitDeleted  = this.handleAvailableUnitDeleted.bind(this);
+    this.handleConditionAdded = this.handleConditionAdded.bind(this);
 
   }
   static defaultProps = {
@@ -875,6 +912,10 @@ export class Workspace extends React.Component {
     this.setState({selected_node: node, selected_node_name: node.id()})
   }
 
+  handleConditionAdded(variable, operation, value){
+    console.log('adding condition', variable, operation, value)
+  }
+
   download_workspace(){
     //const ws = JSON.stringify(this.state)
     const container_string = this.state.container.save()
@@ -965,9 +1006,9 @@ export class Workspace extends React.Component {
     let input_badge
     if(!model_can_build){
       hide = "hidden"
-      input_badge = <span class="badge badge-danger">Error</span>
+      input_badge = <span className="badge badge-danger">Error</span>
     } else {
-      input_badge = <span class="badge badge-success">Ready</span>
+      input_badge = <span className="badge badge-success">Ready</span>
     }
     const project_name = this.state.container.name
     const n_available_units = Object.keys(this.state.available_units).length
