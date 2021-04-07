@@ -51,6 +51,11 @@ import reportWebVitals from './reportWebVitals';
 
 //let c = new Container([])
 let c = new GraphContainer()
+// let l = new Layer("L1")
+// c.add_layer(l)
+// let l2 = new Layer("L2")
+// c.add_layer(l2)
+// c.add_edge('L1', 'L2', [])
 
 ReactDOM.render(
   <ToolView container={c}/>,

@@ -1,7 +1,14 @@
 import React from 'react';
-import {Unit, Layer, DummyModel, Container, EsynDecisionTree, ModelState} from './script.js';
+import {Unit, Layer, DummyModel, GraphContainer, Container, EsynDecisionTree, ModelState} from './script.js';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from "cytoscape";
+
+class ContainerNotRecognisedError extends Error {
+	constructor(message) {
+	  super(message);
+	  this.name = "ContainerNotRecognisedError";
+	}
+}
 
 function ListItem(props) {
   // Correct! There is no need to specify the key here:
@@ -98,6 +105,36 @@ export class UnitAvailableView extends React.Component {
       </div>
       <div className="card-footer">
       <button type="button" className="btn btn-danger btn-sm" onClick={this.handleDelete}>Delete</button>
+      </div>
+      </div>
+    );
+  }
+}
+
+export class EsynAvailableView extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.handleCreate = this.handleCreate.bind(this)
+  }
+
+  handleCreate(){
+    console.log("trying to create a unit for project", this.props.unit.projectid)
+    this.props.handleUnitAdded(this.props.unit.projectid, this.props.unit_key)
+  }
+
+  render() {
+
+    return (
+      <div className="card available-unit-card">
+      <div className="card-header">
+        {this.props.unit_key}
+      </div>
+      <div className="card-body">
+        Last edited: {this.props.unit.last_edited}
+      <button onClick={this.handleCreate}>Create unit</button>
+      </div>
+      <div className="card-footer">
       </div>
       </div>
     );
@@ -284,8 +321,20 @@ export class GraphContainerConditionControls extends React.Component {
     let els = event.target.elements
     const variable = els['cond-var-select'].value
     const operation = els['cond-op-select'].value
-    const value = this.state.condition_value
-    this.props.handleConditionAdded(variable, operation, value)
+    const value_raw = els['cond-value'].value
+    const type = this.state.type
+    let value
+    if(type === 'radio'){
+      value = value_raw
+    } else if(type === 'number') {
+      value = parseFloat(value_raw)
+    } else {
+      value = value_raw
+    }
+    const ok = this.props.handleConditionAdded(this.props.label_id, variable, operation, value, type)
+    if(ok){
+      event.target.reset()
+    }
   }
 
   handleValueChange(value) {
@@ -311,8 +360,64 @@ export class GraphContainerConditionControls extends React.Component {
     const variable_opts = Object.keys(this.props.variables).map((x) => <option key={x}>{x}</option>)
     const ops = ['=', '!=', '>', '>=', '<', '<=']
     const operator_opts = ops.map((x) => <option key={x}>{x}</option>)
+    const type = this.state.type
+    const id_true = `cond_value_true`
+    const id_false = `cond_value_false`
+    const id_unknown = `cond_value_unknown`
+
+    //work out what the value type is
+    let in_el
+
+    if(type == "num"){
+      in_el = <input type="number" name='cond-value' className="form-check-input"  />
+    } else if(type == 'bool'){
+      in_el = (<div>
+        <div className="form-check">
+        <input
+          id={id_true}
+          type="radio"
+          name='cond-value'
+          value="True"
+          className="form-check-input"
+        />
+        <label htmlFor={id_true} className="form-check-label">
+        True
+      </label>
+      </div>
+      
+      <div className="form-check">
+      <input
+        id={id_false}
+        type="radio"
+        name='cond-value'
+        value="False"
+        className="form-check-input"
+      />
+      <label htmlFor={id_false} className="form-check-label">
+      False
+      </label>
+      </div>
+      
+      <div className="form-check">
+      <input
+        id={id_unknown}
+        type="radio"
+        name='cond-value'
+        value="Unknown"
+        className="form-check-input"
+      />
+      <label htmlFor={id_unknown} className="form-check-label">
+      Unknown
+    </label>
+    </div>
+    </div>)
+    } else if(type=='str'){
+      in_el = <input type="text" name='cond-value' className="form-check-input"  />
+    } else {
+      in_el = <input type="text" name='cond-value' className="form-check-input" disabled='disabled'/>
+    }
     return (
-      <form onSubmit={this.handleSubmit}>
+      <form onSubmit={this.handleSubmit} id='condition_edit_form'>
         <div className="form-group row">
         <label htmlFor='cond-var-select' className="col-sm-2 col-form-label">
         Variable
@@ -341,16 +446,101 @@ export class GraphContainerConditionControls extends React.Component {
         Value
         </label>
         <div className="col-sm-10">
-        <TypedInputView type={this.state.type} 
-        name={'variable_value'} 
-        value={this.state.condition_value} 
-        onChange={this.handleValueChange}
-        ></TypedInputView>
+        {in_el}
         </div>
         </div>
 
         <input type="submit" value="Add to model" className="btn btn-primary btn-block"/>
       </form>
+    );
+  }
+}
+
+export class GraphContainerConditionList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleDelete = this.handleDelete.bind(this);
+    this.handleChange = this.handleChange.bind(this);
+    this.state = {'selected': []}
+  }
+
+  handleDelete() {
+    this.props.handleDelete(this.props.label_id, this.state.selected)
+  }
+
+  handleChange(event){
+    const sel = event.target.selectedOptions
+    let opts = [],
+    opt;
+    let len = sel.length;
+    for (let i = 0; i < len; i++) {
+      opt = sel[i].value;
+      opts.push(opt);
+    }
+    this.setState({'selected':opts})
+  }
+
+  render() {
+    const n_conditions = this.props.conditions.length
+    const conds = this.props.conditions.map((x) => <option key={x.cond_str}>{x.cond_str}</option>)
+    return (
+      <div>
+        Conditions: {n_conditions}
+      <select id='cond-list-select' multiple="multiple" onChange={this.handleChange}>{conds}</select>
+      <button onClick={this.handleDelete}>Delete Selected</button>
+      </div>
+    );
+  }
+}
+
+export class ComputeNodeView extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+
+    return (
+      <div>
+      <p>Compute {this.props.node_id}</p>
+      <LayerView layer={this.props.layer_data} />
+      </div>
+    );
+  }
+}
+
+export class LabelNodeView extends React.Component {
+  constructor(props) {
+    /*
+    node_id
+    handleConditionAdded
+    handleConditionDeleted
+    variables (from Workspace.state.user_input)
+    conditions
+    */
+    super(props);
+  }
+
+  render() {
+    const n_conditions = this.props.conditions.length
+    return (
+      <div>
+      <p>Label {this.props.node_id}</p>
+      <h4>Conditions</h4>
+      <h5>Add condition</h5>
+      <GraphContainerConditionControls 
+      handleConditionAdded={this.props.handleConditionAdded} 
+      variables={this.props.variables}
+      label_id={this.props.node_id}
+      >
+      </GraphContainerConditionControls>
+      <h5>Current conditions {n_conditions}</h5>
+      <GraphContainerConditionList 
+      conditions={this.props.conditions}
+      handleDelete={this.props.handleConditionDeleted}
+      label_id={this.props.node_id}
+      ></GraphContainerConditionList>
+      </div>
     );
   }
 }
@@ -382,6 +572,9 @@ export class LayerView extends React.Component {
   }
 
   render() {
+    if(this.props.layer === undefined){
+      return (<p>Empty</p>)
+    }
     const units = Object.keys(this.props.layer.units)
     const listItems = units.map((unit_name) =>
       // Correct! Key should be specified inside the array.
@@ -776,7 +969,10 @@ export class Workspace extends React.Component {
       user_input: all_inputs,
       fileDownloadUrl: null,
       selected_node_name: "",
-      selected_node: undefined
+      selected_node: undefined,
+      selected_node_is_label: undefined,
+      esyn_items: [],
+      esyn_token: ''
     }
     //this.container = this.props.container
 
@@ -788,6 +984,9 @@ export class Workspace extends React.Component {
     this.handleProjectNameChange = this.handleProjectNameChange.bind(this);
     this.handleAvailableUnitDeleted  = this.handleAvailableUnitDeleted.bind(this);
     this.handleConditionAdded = this.handleConditionAdded.bind(this);
+    this.handleConditionDeleted = this.handleConditionDeleted.bind(this);
+    this.handleAPIkey = this.handleAPIkey.bind(this);
+    this.createUnitFromEsyn = this.createUnitFromEsyn.bind(this);
 
   }
   static defaultProps = {
@@ -846,6 +1045,48 @@ export class Workspace extends React.Component {
     this.setState({available_units: au})
   }
 
+  createUnitFromEsyn(project_id, project_name){
+    //make API call to get actual project data
+    var details =  { action: 'getProjectFromToken',
+                    token: this.state.esyn_token,
+                    projectid: parseInt(project_id)
+                  }
+  
+    let formBody = [];
+    for (var property in details) {
+      let encodedKey = encodeURIComponent(property);
+      let encodedValue = encodeURIComponent(details[property]);
+      formBody.push(encodedKey + "=" + encodedValue);
+    }
+    formBody = formBody.join("&");
+    
+
+    fetch("https://esyn.rosalind.kcl.ac.uk/public.php", { method: 'post', mode: 'cors', headers: {
+      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+    },
+    body: formBody})
+      .then(res => res.json())
+      .then(
+        (result) => {
+          console.log(result)
+          let esyn_model = new EsynDecisionTree(result)
+          let esyn_unit = new Unit(project_name, esyn_model)
+          this.handleUnitUpload(esyn_unit)
+        },
+        // Note: it's important to handle errors here
+        // instead of a catch() block so that we don't swallow
+        // exceptions from actual bugs in components.
+        (error) => {
+          this.setState({
+            tokenAPIloaded: true,
+            tokenDataAPIerror: true //doesn't do anything
+          });
+          console.log(error)
+      }
+    )
+
+  }
+
   handleWorkspaceUpload(ws){
     console.log("uploaded workspace", ws)
     //create Unit of correct type for every unit in .available_units
@@ -866,9 +1107,19 @@ export class Workspace extends React.Component {
     }
 
     //load the container
-    let c = new Container([], '')
-    c.load(ws.container)
-    console.log("container is loaded", c)
+    let c
+    if(ws.container.container_type == "Graph"){
+      c = new GraphContainer([], '')
+      c.load(ws.container)
+      console.log("container is loaded", c)
+    } else if(ws.container.container_type == "Plain") {
+      c = new Container([], '')
+      c.load(ws.container)
+      console.log("container is loaded", c)
+    } else {
+      throw new ContainerNotRecognisedError("uploaded container type not valid")
+    }
+    
 
     //user inputs
     let all_inputs = {}
@@ -909,11 +1160,70 @@ export class Workspace extends React.Component {
   }
 
   handleNodeSelected(node){
-    this.setState({selected_node: node, selected_node_name: node.id()})
+    this.setState({selected_node: node, selected_node_name: node.id(), selected_node_is_label: node.hasClass('labelnode')})
   }
 
-  handleConditionAdded(variable, operation, value){
-    console.log('adding condition', variable, operation, value)
+  handleConditionAdded(label_id, variable, operation, value, value_type){
+    console.log('adding condition', variable, operation, value, value_type)
+    
+    let c = this.state.container
+    const added = c.add_condition_to_edge(label_id, variable, operation, value, value_type)
+    if(added){
+      this.setState({container: c})
+    }
+    return added
+    
+  }
+  handleConditionDeleted(label_id, to_delete){    
+    console.log("workspace send delete command")
+    let c = this.state.container
+    c.delete_conditions_from_edge(label_id, to_delete)
+    this.setState({container: c})
+    
+  }
+
+  handleAPIkey(){
+    const api_key = '3b68cda1c23c4cb001e1768c7dcb3b2da7f4d2167e1858f56ff143b77c9f2cda' // document.getElementById('esyn_api_key').value
+
+    var details =  { action: 'listProjectsFromToken',
+                    token: api_key
+                  }
+  
+    let formBody = [];
+    for (var property in details) {
+      let encodedKey = encodeURIComponent(property);
+      let encodedValue = encodeURIComponent(details[property]);
+      formBody.push(encodedKey + "=" + encodedValue);
+    }
+    formBody = formBody.join("&");
+    
+
+    fetch("https://esyn.rosalind.kcl.ac.uk/public.php", { method: 'post', mode: 'cors', headers: {
+      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+    },
+    body: formBody})
+      .then(res => res.json())
+      .then(
+        (result) => {
+          this.setState({
+            tokenAPIloaded: true,
+            esyn_items: result,
+            esyn_token: api_key
+          });
+          console.log(result)
+        },
+        // Note: it's important to handle errors here
+        // instead of a catch() block so that we don't swallow
+        // exceptions from actual bugs in components.
+        (error) => {
+          this.setState({
+            tokenAPIloaded: true,
+            esyn_token: api_key,
+            tokenAPIerror: true //doesn't do anything
+          });
+          console.log(error)
+      }
+    )
   }
 
   download_workspace(){
@@ -1014,11 +1324,37 @@ export class Workspace extends React.Component {
     const n_available_units = Object.keys(this.state.available_units).length
 
     const graph_els = this.state.container.graph_els
+    const layout = {name: 'preset'}
 
-    const listItems = Object.keys(this.state.available_units).map((unit_name) =>
-    <UnitAvailableView key={unit_name} unit_key={unit_name} unit={this.state.available_units[unit_name]} handleDelete={this.handleAvailableUnitDeleted} />
+    let node_contents
+    const node_is_label = this.state.selected_node_is_label
+    const something_selected = this.state.selected_node_name !== undefined
+    if(something_selected){
+      if(!node_is_label){
+        node_contents = <ComputeNodeView node_id={this.state.selected_node_name} layer_data={this.state.container.layers[this.state.selected_node_name]}></ComputeNodeView>
+      } else {
+        node_contents = <LabelNodeView 
+          node_id={this.state.selected_node_name}
+          handleConditionAdded={this.handleConditionAdded}
+          handleConditionDeleted={this.handleConditionDeleted}
+          variables={this.state.user_input}
+          conditions={this.state.container.metadata.conditions[this.state.selected_node_name]}
+          ></LabelNodeView>
+      }
+    }
     
+
+    const listItems = Object.keys(this.state.available_units).map((unit_name) => 
+    <UnitAvailableView key={unit_name} unit_key={unit_name} unit={this.state.available_units[unit_name]} handleDelete={this.handleAvailableUnitDeleted} /> 
     );
+
+    const esynListItems = this.state.esyn_items.map((project, index) => {
+      if(project.type == 'DecisionTree'){
+        return <EsynAvailableView key={index} unit_key={project.label} unit={project} handleUnitAdded={this.createUnitFromEsyn} />
+      }
+    }
+    );
+
     return (
       <div className="container">
         <div className="row">
@@ -1075,6 +1411,20 @@ export class Workspace extends React.Component {
           </div>
           </div>
 
+          <div className="row mt-1">
+          <div className="col">
+            <label htmlFor="esyn_api_key">Esyn API Key</label>
+          <input type='text' id='esyn_api_key'></input>
+          <button onClick={this.handleAPIkey}>Link API Key</button>
+          </div>
+          </div>
+
+          <div className="row mt-1">
+            <div className="col card-columns">
+                {esynListItems}
+                </div>
+            </div>
+
           <div className='row mt-1'>
             <div className='col'>
             <h3>Units available in workspace: {n_available_units}</h3>
@@ -1116,10 +1466,15 @@ export class Workspace extends React.Component {
               style={ { width: '600px', height: '600px', backgroundColor: "lightblue"} }
               cy={cy => {
                 cy.unbind("tap"); //unbinding is necessary or get one listener per node added
+                cy.unbind("add")
                 cy.on('tap', 'node', evt => {
                   var node = evt.target;
                   this.handleNodeSelected(node)
                 });
+                cy.on('add', 'node', _evt => {
+                  cy.layout(layout).run()
+                  cy.fit()
+                })
               }
               }
               stylesheet={[
@@ -1165,7 +1520,14 @@ export class Workspace extends React.Component {
             />
           </div>
           <div className="col">
-            <p>Selected node: {this.state.selected_node_name}</p>
+            <h4>Selected: {this.state.selected_node_name}</h4>
+            <h4>Node contents</h4>
+            {node_contents}
+          </div>
+          </div>
+          <div className="row mt-1">
+          <div className="col">
+          
               <button type="button" onClick={() => this.add_layer()}>Add Compute Node</button>
               <h4>Add unit to model</h4>
                 <GraphContainerNodeControls handleUnitAdded={this.handleUnitAdded} layers={this.state.container.layer_order} units={Object.keys(this.state.available_units)}></GraphContainerNodeControls>
@@ -1173,15 +1535,7 @@ export class Workspace extends React.Component {
                 <h4>Add edge to model</h4>
                 <GraphContainerEdgeControls handleEdgeAdded={this.handleEdgeAdded} layers={this.state.container.layer_order}></GraphContainerEdgeControls>
 
-                <h4>Conditions</h4>
-                <GraphContainerConditionControls 
-                handleConditionAdded={this.handleConditionAdded} 
-                current_node={this.state.selected_node}
-                variables={this.state.user_input}
-                >
-
-                </GraphContainerConditionControls>
-
+                
           </div>
           </div>
           </div>

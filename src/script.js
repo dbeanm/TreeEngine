@@ -18,6 +18,13 @@ class AddEdgeError extends Error {
 	}
 }
 
+class VariableTypeError extends Error {
+	constructor(message) {
+	  super(message);
+	  this.name = "VariableTypeError";
+	}
+}
+
 class AddUnitError extends Error {
 	constructor(message) {
 	  super(message);
@@ -38,6 +45,7 @@ instead use the container functions to control the layer, which guarantees the c
 */
 export class Container {
 	constructor(layers = [], name = ""){
+		this.container_type = "Plain"
 		this.layers = {}
 		this.layer_order = []
 		this.state = {}
@@ -59,6 +67,7 @@ export class Container {
 			s['layers'][k] = this.layers[k].save()
 		}
 		s['name'] = this.name
+		s['container_type'] = this.container_type
 		//return JSON.stringify(s)
 		return s
 	}
@@ -154,6 +163,7 @@ export class GraphContainer {
 		this.cy = cytoscape({
 			headless: headless
 		  });
+		this.container_type = 'Graph'
 		this.layers = {}
 		this.state = {}
 		this.variables = {}
@@ -163,6 +173,11 @@ export class GraphContainer {
 		this.graph_els = []
 		this.graph_state =  {'valid': false, 'message' : [], 'root': undefined}
 		this.metadata = {conditions: {}}
+		this.metadata.variables = {} // variable name -> properties. These appearances are only in rules/conditions, not inside units
+		//user defined groups of variables
+		this.metadata.dt_ui_groups = {} // group name -> [variables]
+		this.metadata.dt_ui_groups[''] = [] //empty string is always the group when a new variable is created
+		this.metadata.dt_rules = {} // functions to run
 
 
 	}
@@ -185,6 +200,9 @@ export class GraphContainer {
 			s['layers'][k] = this.layers[k].save()
 		}
 		s['name'] = this.name
+		s['container_type'] = this.container_type
+		s['metadata'] = this.metadata
+		s['graph'] = this.cy.json()['elements']
 		//return JSON.stringify(s)
 		return s
 	}
@@ -203,6 +221,12 @@ export class GraphContainer {
 			loaded_layer.load(ld)
 			this.add_layer(loaded_layer)
 		}
+		this.metadata = config.metadata
+		this.cy.elements().remove()
+		this.cy.add(config.graph)
+		this.update_graph_validity()
+		this.update_graph_els()
+
 	}
 
 	add_layer(layer, name = layer.name){
@@ -273,6 +297,107 @@ export class GraphContainer {
 		])
 		return the_label_node.id()
 	}
+
+	add_condition_to_edge(label_id, cond_var, cond_op, cond_val, cond_val_type){
+		let condition_obj = {}
+		condition_obj['operation'] = cond_op
+		condition_obj['prop'] = cond_op == 'else' ? "" : cond_var
+		condition_obj['value'] = cond_op == 'else' ? "" : cond_val
+		condition_obj['value_type'] = cond_op == 'else' ? "" : cond_val_type
+		condition_obj['cond_str'] = condition_obj['prop'] + " " + condition_obj['operation'] + " " + condition_obj['value']
+
+		//check if the type of the input matches the type of the proporty if it already exists
+		if( this.inputs.usable.hasOwnProperty(condition_obj['prop']) ){
+			let correct_type = this.inputs.usable[condition_obj['prop']].type
+			if (correct_type != condition_obj['value_type']){
+				console.log(`${cond_var} has type ${correct_type} but got ${cond_val_type}`)
+				//throw new VariableTypeError(`${cond_var} has type ${correct_type} but got ${cond_val_type}`)
+				return false //have to stop
+			} else {
+				this.metadata.conditions[label_id].push(condition_obj)
+				if (this.metadata.variables[condition_obj['prop']].appearances.hasOwnProperty(label_id)) {
+					this.metadata.variables[condition_obj['prop']].appearances[label_id] += 1
+				} else {
+					this.metadata.variables[condition_obj['prop']].appearances[label_id] = 1
+				}
+				return true
+			}
+			
+		} else if(this.inputs.usable.hasOwnProperty(condition_obj['prop'])){
+			console.log("cannot create a condition for a conflicted variable")
+			return false
+		} else {
+			console.log("variable does not exist", condition_obj['prop'])
+			return false
+		}
+		
+		// in esyn there is an else here to create the variable if it does not exist
+	}
+
+	create_variable_meta(var_name, type, required=false){
+		//only adds metadata if the variable does not exist, otherwise does nothing
+		let variable_obj = {}
+        variable_obj['value_type'] = type
+        variable_obj['required'] = required
+        variable_obj['appearances'] = {}
+        variable_obj['ui_group'] = ''
+		if(!this.metadata.variables.hasOwnProperty(var_name)){
+			this.metadata.variables[var_name] = variable_obj
+		}
+	}
+
+	delete_conditions_from_edge(label_id, selected){
+		console.log("container deleting conditions")
+		let keep = []
+		for(const el of this.metadata.conditions[label_id]){
+			if(selected.indexOf(el.cond_str) != -1){
+				//get the ui group first before (potentially) deleting the variable
+				var uig = this.metadata.variables[el.prop].ui_group
+
+				//delete
+				this.metadata.variables[el.prop].appearances[label_id] -= 1
+				//currently all variables should always have these trackers even if empty
+				//not sure how to handle ui group
+				// if(this.metadata.variables[el.prop].appearances[label_id] == 0){
+				// 	delete this.metadata.variables[el.prop].appearances[label_id]
+				// 	if(Object.keys(this.metadata.variables[el.prop].appearances).length == 0){
+				// 		//there are no more appearances of this variable so delete it from metadata
+				// 		//variable tracking
+				// 		delete this.metadata.variables[el.prop]
+				// 		//ui groups
+				// 		var pos = this.metadata.dt_ui_groups[uig].indexOf(el.prop)
+				// 		this.metadata.dt_ui_groups[uig].splice(pos, 1)
+				// 	}
+				// }
+			} else {
+				keep.push(el)
+			}
+		}
+   		// this.metadata.conditions[label_id].forEach(function(el){
+       	// 	if(selected.indexOf(el.cond_str) != -1){
+		// 		//get the ui group first before (potentially) deleting the variable
+		// 		var uig = this.metadata.variables[el.prop].ui_group
+
+		// 		//delete
+		// 		this.metadata.variables[el.prop].appearances[label_id] -= 1
+		// 		if(this.metadata.variables[el.prop].appearances[label_id] == 0){
+		// 			delete this.metadata.variables[el.prop].appearances[label_id]
+		// 			if(Object.keys(this.metadata.variables[el.prop].appearances).length == 0){
+		// 				//there are no more appearances of this variable so delete it from metadata
+		// 				//variable tracking
+		// 				delete this.metadata.variables[el.prop]
+		// 				//ui groups
+		// 				var pos = this.metadata.dt_ui_groups[uig].indexOf(el.prop)
+		// 				this.metadata.dt_ui_groups[uig].splice(pos, 1)
+		// 			}
+		// 		}
+		// 	} else {
+		// 		keep.push(el)
+		// 	}
+		// })
+		this.metadata.conditions[label_id] = keep
+	}
+
 
 	add_unit_to_layer(layer_name, unit, unit_name = unit.name){
 		console.log(`adding unit ${unit.name} to ${layer_name} with name ${unit_name}`)
@@ -626,10 +751,13 @@ export class GraphContainer {
 					ob['state'] = 'good'
 				}
 				this.inputs.usable[key] = ob
+				this.create_variable_meta(key, value.type0)
 			} else {
 				ob = {type: '', appears: value.appears, state: 'conflict', name:key}
 				this.inputs.conflict[key] = ob
+				this.create_variable_meta(key, '')
 			}
+			
 		}
 	}
 }
