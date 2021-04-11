@@ -185,6 +185,7 @@ export class GraphContainer {
 		this.metadata.dt_ui_groups = {} // group name -> [variables]
 		this.metadata.dt_ui_groups[''] = [] //empty string is always the group when a new variable is created
 		this.metadata.dt_rules = {} // functions to run
+		this.model_eval_log = []
 		this.id2name = new ID2Name()
 	}
 
@@ -228,6 +229,7 @@ export class GraphContainer {
 			this.add_layer(loaded_layer)
 		}
 		this.metadata = config.metadata
+		this.model_eval_log = []
 		this.cy.elements().remove()
 		this.cy.add(config.graph)
 		this.update_graph_validity()
@@ -809,9 +811,9 @@ export class GraphContainer {
 					if(!seen.hasOwnProperty(vname)){
 						//type0 is a shortcut to get the unique type used if types.size == 0
 						//without converting the set to an array
-						name = `${layer_name}-${uname}`
 						seen[vname] = {'appears': [], 'types': new Set(), 'type0': vdata.type}
 					}
+					name = `${layer_name}-${uname}`
 					seen[vname]['appears'].push(name)
 					seen[vname]['types'].add(vdata.type)
 				}
@@ -1114,7 +1116,7 @@ export class EsynDecisionTree extends Model{
 		this.network_name = network_name
 		this.model_json = model_json
 		this.load(model_json, network_name)
-		
+		this.model_eval_log = []
 	}
 
 	save(){
