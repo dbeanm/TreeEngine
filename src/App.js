@@ -141,6 +141,70 @@ export class EsynAvailableView extends React.Component {
   }
 }
 
+export class EsynAvailableRow extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.handleCreate = this.handleCreate.bind(this)
+  }
+
+  handleCreate(){
+    console.log("trying to create a unit for project", this.props.project.projectid)
+    this.props.handleUnitAdded(this.props.project.projectid, this.props.project.label)
+  }
+
+  render() {
+
+    return (
+      <tr key={this.props.i}><td>{this.props.project.label}</td><td>{this.props.project.last_edited}</td><td><button onClick={this.handleCreate}>Create unit</button></td></tr>
+    );
+  }
+}
+
+export class EsynAvailableTable extends React.Component {
+  constructor(props) {
+    super(props);
+
+  }
+
+  renderTableHeader() {
+    let header = ["Name", "Last Modified", "Actions"]
+    return header.map((key, index) => {
+       return <th key={index}>{key}</th>
+    })
+ }
+
+ renderTableData() {
+   let listItems = []
+   let i = 0
+    for(const [pg, proj] of Object.entries(this.props.projects)){
+      listItems.push(<tr key={i}><td colSpan={3}><b>{pg}</b></td></tr>)
+      i += 1
+      for(const project of proj){
+        listItems.push(<EsynAvailableRow key={i} project={project} handleUnitAdded={this.props.handleUnitAdded}></EsynAvailableRow>)
+        i += 1
+      }
+    }
+
+
+   return ( listItems )
+  }
+
+
+  render() {
+
+    return (
+      <table id='esyn-available-projects' className="model-input-table table">
+        <tbody>
+          <tr>{this.renderTableHeader()}</tr>
+          {this.renderTableData()}
+        </tbody>
+      </table>
+    );
+  }
+  
+}
+
 export class UnitAdderView extends React.Component {
   constructor(props) {
     super(props);
@@ -503,7 +567,7 @@ export class ComputeNodeView extends React.Component {
     return (
       <div>
       <p>Compute {this.props.node_id}</p>
-      <LayerView layer={this.props.layer_data} />
+      <LayerViewQuick layer={this.props.layer_data} />
       </div>
     );
   }
@@ -609,6 +673,52 @@ export class LayerView extends React.Component {
       </div>
     );
   }
+}
+
+export class LayerViewQuick extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  renderTableHeader() {
+    let header = ["Name", "Unit", "Actions"]
+    return header.map((key, index) => {
+       return <th key={index}>{key}</th>
+    })
+ }
+
+ renderTableData() {
+  const units = Object.keys(this.props.layer.units)
+  const listItems = units.map((unit_name) =>
+    // Correct! Key should be specified inside the array.
+    <tr key={unit_name}><td>{unit_name}</td><td>{this.props.layer.units[unit_name].name}</td><td>warnings</td></tr>
+  );
+
+   return ( listItems )
+  }
+
+
+  render() {
+
+    if(this.props.layer === undefined){
+      return (<p>Empty</p>)
+    }
+    return (
+      // <div>
+      //   <p>Unit: {this.props.unit_name} ({this.props.unit.name})</p>
+      //   <p>Output type: {this.props.unit.output_type}</p>
+      //   <p>Unit Varaibles: {variables.length}</p>
+      // <ModelStateView modelstate={this.props.result}></ModelStateView>
+      // </div>
+      <table id='selected-node-contains' className="model-input-table table">
+        <tbody>
+          <tr>{this.renderTableHeader()}</tr>
+          {this.renderTableData()}
+        </tbody>
+      </table>
+    );
+  }
+  
 }
 
 export class ContainerView extends React.Component {
@@ -972,7 +1082,8 @@ export class Workspace extends React.Component {
       selected_node: undefined,
       selected_node_is_label: undefined,
       esyn_items: [],
-      esyn_token: ''
+      esyn_token: '',
+      esyn_project_grps: []
     }
     //this.container = this.props.container
 
@@ -1182,6 +1293,19 @@ export class Workspace extends React.Component {
     
   }
 
+  get_project_groups(esyn_projects){
+    let project_grps = {}
+    for(const project of esyn_projects){
+      if(project.type == 'DecisionTree'){
+        if(!project_grps.hasOwnProperty(project.group)){
+          project_grps[project.group] = []
+        }
+        project_grps[project.group].push(project)
+      }
+    }
+    return project_grps
+  }
+
   handleAPIkey(){
     const api_key = '3b68cda1c23c4cb001e1768c7dcb3b2da7f4d2167e1858f56ff143b77c9f2cda' // document.getElementById('esyn_api_key').value
 
@@ -1205,12 +1329,14 @@ export class Workspace extends React.Component {
       .then(res => res.json())
       .then(
         (result) => {
+          const project_groups = this.get_project_groups(result);
           this.setState({
             tokenAPIloaded: true,
             esyn_items: result,
-            esyn_token: api_key
+            esyn_token: api_key,
+            esyn_project_grps: project_groups
           });
-          console.log(result)
+          console.log(result);
         },
         // Note: it's important to handle errors here
         // instead of a catch() block so that we don't swallow
@@ -1287,6 +1413,13 @@ export class Workspace extends React.Component {
     this.setState({container: c})
   }
 
+  delete_layer(){
+    const to_delete = document.getElementById("delete_layer_select").value
+    let c = this.state.container
+    c.delete_layer(to_delete)
+    this.setState({container: c})
+  }
+
   run_model(){
     let input = {}
     for (const key in this.state.user_input) {
@@ -1322,16 +1455,19 @@ export class Workspace extends React.Component {
     }
     const project_name = this.state.container.name
     const n_available_units = Object.keys(this.state.available_units).length
-
+    const current_layers_opts = Object.keys(this.state.container.layers).map((x) => <option key={x}>{x}</option>)
     const graph_els = this.state.container.graph_els
-    const layout = {name: 'preset'}
+    const layout = {name: 'cose'}
 
     let node_contents
     const node_is_label = this.state.selected_node_is_label
     const something_selected = this.state.selected_node_name !== undefined
     if(something_selected){
       if(!node_is_label){
-        node_contents = <ComputeNodeView node_id={this.state.selected_node_name} layer_data={this.state.container.layers[this.state.selected_node_name]}></ComputeNodeView>
+        node_contents = <ComputeNodeView 
+          node_id={this.state.selected_node_name} 
+          layer_data={this.state.container.layers[this.state.selected_node_name]}
+          ></ComputeNodeView>
       } else {
         node_contents = <LabelNodeView 
           node_id={this.state.selected_node_name}
@@ -1348,12 +1484,15 @@ export class Workspace extends React.Component {
     <UnitAvailableView key={unit_name} unit_key={unit_name} unit={this.state.available_units[unit_name]} handleDelete={this.handleAvailableUnitDeleted} /> 
     );
 
-    const esynListItems = this.state.esyn_items.map((project, index) => {
-      if(project.type == 'DecisionTree'){
-        return <EsynAvailableView key={index} unit_key={project.label} unit={project} handleUnitAdded={this.createUnitFromEsyn} />
-      }
-    }
-    );
+    // const esynListItems = this.state.esyn_items.map((project, index) => {
+    //   if(project.type == 'DecisionTree'){
+    //     return <EsynAvailableView key={index} unit_key={project.label} unit={project} handleUnitAdded={this.createUnitFromEsyn} />
+    //   }
+    // }
+    // );
+
+    
+    
 
     return (
       <div className="container">
@@ -1420,8 +1559,8 @@ export class Workspace extends React.Component {
           </div>
 
           <div className="row mt-1">
-            <div className="col card-columns">
-                {esynListItems}
+            <div className="col">
+            <EsynAvailableTable projects={this.state.esyn_project_grps} handleUnitAdded={this.createUnitFromEsyn}></EsynAvailableTable>
                 </div>
             </div>
 
@@ -1474,12 +1613,16 @@ export class Workspace extends React.Component {
                 cy.on('add', 'node', _evt => {
                   cy.layout(layout).run()
                   cy.fit()
-                })
+                });
+                // cy.on('resize', _evt => {
+                //   cy.layout(layout).run()
+                //   cy.fit()
+                // })
               }
               }
               stylesheet={[
                 {
-                  selector: 'node',
+                  selector: 'node.compute',
                   style: {
                     label: 'data(label)'
                   }
@@ -1487,8 +1630,8 @@ export class Workspace extends React.Component {
                 {
                   selector: 'node.labelnode',
                   style: {
-                    
-                    content: 'data(label)', // maps node label to data.conditions_label
+                    'text-valign': 'center',
+                    'label': 'data(conditions_label)', 
                     'shape': 'square',
                     'text-wrap': 'wrap',
                     'text-max-width': 200,
@@ -1505,13 +1648,13 @@ export class Workspace extends React.Component {
                   style: {
                     'width': 3,
                     'line-color': '#000',
+                    "curve-style": "straight"
                   }
                 },
                 {
                   selector: 'edge.directed',
                   style: {
                     'target-arrow-shape': 'triangle',
-                    'source-arrow-color': '#000000',
                     'target-arrow-color': '#000000'
                   }
                 }
@@ -1529,6 +1672,8 @@ export class Workspace extends React.Component {
           <div className="col">
           
               <button type="button" onClick={() => this.add_layer()}>Add Compute Node</button>
+              <select id="delete_layer_select">{current_layers_opts}</select>
+              <button type="button" onClick={() => this.delete_layer()}>Delete Node</button>
               <h4>Add unit to model</h4>
                 <GraphContainerNodeControls handleUnitAdded={this.handleUnitAdded} layers={this.state.container.layer_order} units={Object.keys(this.state.available_units)}></GraphContainerNodeControls>
               

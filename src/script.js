@@ -39,6 +39,13 @@ class ModelExecutionError extends Error {
 	}
 }
 
+class DuplicateEntryError extends Error {
+	constructor(message) {
+	  super(message);
+	  this.name = "DuplicateEntryError";
+	}
+}
+
 /*
 Once a layer has been added to a container it should not be edited directly
 instead use the container functions to control the layer, which guarantees the container also updates
@@ -178,8 +185,7 @@ export class GraphContainer {
 		this.metadata.dt_ui_groups = {} // group name -> [variables]
 		this.metadata.dt_ui_groups[''] = [] //empty string is always the group when a new variable is created
 		this.metadata.dt_rules = {} // functions to run
-
-
+		this.id2name = new ID2Name()
 	}
 
 	update_graph_els(){
@@ -237,7 +243,7 @@ export class GraphContainer {
 			this.cy.add({
 				group: 'nodes',
 				data: {id: name, label: name},
-				position: { x: 200, y: 200 }
+				classes: 'compute'
 			})
 			this.update_graph_els()
 			this.update_graph_validity()
@@ -247,6 +253,44 @@ export class GraphContainer {
 			this.resolve_inputs()
 		}
 	}
+
+	delete_layer(name){
+		console.log("GraphContainer deleting a layer", name)
+		if(!this.layers.hasOwnProperty(name)){
+			return false
+		}
+		delete this.layers[name]
+		delete this.variables[name]
+		this.layer_order = Object.keys(this.layers)
+
+		//update cy
+		let selected = this.cy.getElementById(name)
+		let neighborhood = selected.neighborhood()
+		let labels = neighborhood.filter('.labelnode')
+		for(const lab of labels){
+			this.delete_labelnode(lab.id())
+		}
+		selected = selected.union(neighborhood)
+		selected.remove()
+		this.update_graph_els()
+		this.update_graph_validity()
+		this.resolve_inputs()
+		return true
+	}
+
+	delete_labelnode(label_id){
+		console.log("GraphContainer deleting a labelnode", label_id)
+		//handle variables
+		let conds = this.metadata.conditions[label_id]
+		let cond_strs = conds.map((x) => x.cond_str)
+		this.delete_conditions_from_edge(label_id, cond_strs) //selected is a list of conditions to delete
+	
+		//the edge will be deleted so delete conditions metadata
+		delete this.metadata.conditions[label_id]
+	
+	}
+
+	
 
 	add_edge(layer1, layer2, conditions = []){
 		// layer1, layer2: layer NAMES
@@ -276,9 +320,9 @@ export class GraphContainer {
 		
 		let the_label_node = this.cy.add({
 			group: 'nodes',
-			data: {label: "label node here"},
+			data: {conditions_label: ""},
 			classes: 'labelnode',
-			position: { x: xPos, y: yPos }
+			
 		})
 		this.metadata.conditions[the_label_node.id()] = []
 
@@ -320,6 +364,8 @@ export class GraphContainer {
 				} else {
 					this.metadata.variables[condition_obj['prop']].appearances[label_id] = 1
 				}
+				this.update_condition_label(label_id)
+				this.update_graph_els()
 				return true
 			}
 			
@@ -327,11 +373,29 @@ export class GraphContainer {
 			console.log("cannot create a condition for a conflicted variable")
 			return false
 		} else {
+			//if changed to allow new variables to be created this way, then 
+			//remember to update_condition_label or move this branch into the current one that
+			//actually adds the condition
 			console.log("variable does not exist", condition_obj['prop'])
 			return false
 		}
 		
+		/*
+		?? TODO ??
 		// in esyn there is an else here to create the variable if it does not exist
+		*/
+
+
+	}
+
+	update_condition_label(id){
+		let label = ""
+		let edge = this.cy.getElementById(id)
+		this.metadata.conditions[id].forEach(function(el){
+			label = label + el.cond_str + "\n"
+		})
+		label = label.slice(0, -1) // remove trailing chars
+		edge.data('conditions_label', label)
 	}
 
 	create_variable_meta(var_name, type, required=false){
@@ -432,7 +496,19 @@ export class GraphContainer {
 		console.log("running model")
 		const root = this.cy.getElementById(this.graph_state.root)
 		const result = this.traverse_from(root, input, scoped_input)
+		//check for nodes that did not run, set state accordingly
+		//the nodes that run are ALL in result.path_nodes and ONLY in result.path_nodes
+		const seen = new Set(result.path_nodes)
+		const all_layers = Object.keys(this.layers)
+		let difference = new Set(
+			all_layers.filter(x => !seen.has(x)));
+		for(const l of difference){
+			this.layers[l].reset_state()
+		}
 		this.state = result.updated_input
+		console.log("GraphContainer result", result)
+		
+		
 		return result.result
 	}
 
@@ -444,6 +520,7 @@ export class GraphContainer {
 		result[root_node.id()] = layer_r
 
 		//begin traversal
+		console.log("GraphContainer is running")
 		let options = this.get_targets_from(root_node)
 		let can_reach = this.conditions_met(root_node, options, user_input)
 		let missing_per_step = []
@@ -455,7 +532,7 @@ export class GraphContainer {
 		let next_src
 		while(reachable_ids.length == 1){
 			next_src = reachable_ids[0]
-			console.log("continue to", next_src)
+			console.log("GraphContainer continue to", next_src)
 			next_node = this.cy.$('#' + next_src)
 			
 			//run the current node
@@ -468,7 +545,7 @@ export class GraphContainer {
 			options = this.get_targets_from(next_node)
 
 			can_reach = this.conditions_met(next_node, options, user_input)
-			console.log(can_reach)
+			console.log('GraphContainer can reach', can_reach)
 			reachable_ids = Object.keys(can_reach.reachable_ids) //was _.keys()
 			missing_per_step.push(can_reach.missing)
 		}
@@ -1485,4 +1562,51 @@ export class DummyModel extends Model{
 		return vars
 	}
 
+}
+
+class ID2Name {
+	/*
+	class to map from ID to Name. Will not allow duplicate names or ids
+	only names can be changed
+	get takes ID -> name
+	revGet takes name -> id
+	add accepts (id, name)
+	*/
+    constructor(map = {}) {
+       this.map = map;
+       this.reverseMap = {};
+       for(const [key, value] of Object.entries(map)) {
+          this.reverseMap[value] = key;   
+       }
+    }
+    get(key) { return this.map[key]; }
+    revGet(key) { return this.reverseMap[key]; }
+
+	add(key, value = key){
+		if(this.map.hasOwnProperty(key)){
+			throw new DuplicateEntryError(`Key already exists: ${key}`)
+		}
+		if(this.reverseMap.hasOwnProperty(value)){
+			throw new DuplicateEntryError(`Value already exists: ${value}`)
+		}
+		this.map[key] = value
+		this.reverseMap[value] = key
+	}
+
+	rename(key, value){
+		if(this.reverseMap.hasOwnProperty(value)){
+			throw new DuplicateEntryError(`Value already exists: ${value}`)
+		}
+		this.delete(key)
+		this.add(key, value)
+	}
+
+	delete(key){
+		if(!this.map.hasOwnProperty(key)){
+			return
+		}
+		const value = this.map[key]
+		delete this.map[key]
+		delete this.reverseMap[value]
+	}
 }
