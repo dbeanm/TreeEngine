@@ -195,12 +195,14 @@ export class EsynAvailableTable extends React.Component {
   render() {
 
     return (
+      <div>
       <table id='esyn-available-projects' className="model-input-table table">
         <tbody>
           <tr>{this.renderTableHeader()}</tr>
           {this.renderTableData()}
         </tbody>
       </table>
+      </div>
     );
   }
   
@@ -1170,7 +1172,6 @@ export class Workspace extends React.Component {
       selected_node_name: "",
       selected_node: undefined,
       selected_node_is_label: undefined,
-      esyn_items: [],
       esyn_token: '',
       esyn_project_grps: []
     }
@@ -1485,7 +1486,6 @@ export class Workspace extends React.Component {
           const project_groups = this.get_project_groups(result);
           this.setState({
             tokenAPIloaded: true,
-            esyn_items: result,
             esyn_token: api_key,
             esyn_project_grps: project_groups
           });
@@ -1651,16 +1651,7 @@ export class Workspace extends React.Component {
 
     const listItems = Object.keys(this.state.available_units).map((unit_name) => 
     <UnitAvailableView key={unit_name} unit_key={unit_name} unit={this.state.available_units[unit_name]} handleDelete={this.handleAvailableUnitDeleted} /> 
-    );
-
-    // const esynListItems = this.state.esyn_items.map((project, index) => {
-    //   if(project.type == 'DecisionTree'){
-    //     return <EsynAvailableView key={index} unit_key={project.label} unit={project} handleUnitAdded={this.createUnitFromEsyn} />
-    //   }
-    // }
-    // );
-
-    
+    );    
     
 
     return (
