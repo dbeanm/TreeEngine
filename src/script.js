@@ -280,6 +280,60 @@ export class GraphContainer {
 		return true
 	}
 
+	rename_layer(old_name, new_name){
+		console.log('GraphContainer trying to rename from', old_name,'to',new_name)
+		if(this.layers.hasOwnProperty(new_name)){
+			throw new AddLayerError(`Layer name already exists: ${new_name}`)
+		} else if(!this.layers.hasOwnProperty(old_name)){
+			//TODO change to better error class
+			throw new AddLayerError(`No layer exists with current name: ${old_name}`)
+		} else {
+			//get the old node
+			let old_node = this.cy.getElementById(old_name)
+
+			//add new node to graph
+			this.cy.add({
+				group: 'nodes',
+				data: {id: new_name, label: new_name},
+				classes: 'compute'
+			})
+			//move edges from all current labelnodes for oldname to newname
+			const incomers = old_node.incomers('edge') //to change target
+			const outgoers = old_node.outgoers('edge') //to change source
+			let new_edges = []
+			let edge
+			incomers.forEach((element) => {
+				edge = {
+					group: 'edges',
+					data: {source: element.source().id(), target: new_name}
+				}
+				new_edges.push(edge)
+			});
+			outgoers.forEach((element) => {
+				edge = {
+					group: 'edges',
+					data: {source: new_name, target: element.target().id()}
+				}
+				new_edges.push(edge)
+			});
+			this.cy.add(new_edges)
+			let selected = incomers.union(outgoers)
+			selected.remove()
+
+			//copy metadata
+			this.layers[new_name] = this.layers[old_name]
+			this.variables[new_name] = this.variables[old_name]
+
+			//delete the old node
+			this.delete_layer(old_name)
+			// console.log("els are now")
+			// const els_now = this.cy.json()['elements']
+			// console.log(els_now)
+			// console.log( CytoscapeComponent.normalizeElements(els_now))
+			return true
+		}
+	}
+
 	delete_labelnode(label_id){
 		console.log("GraphContainer deleting a labelnode", label_id)
 		//handle variables
@@ -289,6 +343,11 @@ export class GraphContainer {
 	
 		//the edge will be deleted so delete conditions metadata
 		delete this.metadata.conditions[label_id]
+
+		//delete the node
+		this.cy.getElementById(label_id).remove()
+		this.update_graph_els()
+		this.update_graph_validity()
 	
 	}
 

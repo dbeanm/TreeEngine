@@ -2,6 +2,7 @@ import React from 'react';
 import {Unit, Layer, DummyModel, GraphContainer, Container, EsynDecisionTree, ModelState} from './script.js';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from "cytoscape";
+import Select from 'react-select';
 
 class ContainerNotRecognisedError extends Error {
 	constructor(message) {
@@ -560,6 +561,15 @@ export class GraphContainerConditionList extends React.Component {
 export class ComputeNodeView extends React.Component {
   constructor(props) {
     super(props);
+    this.handleRename = this.handleRename.bind(this)
+  }
+
+  handleRename(){
+    const new_name = document.getElementById('layer-rename-value').value
+    const old_name = this.props.layer_data.name
+    console.log('sending rename from',old_name,'to',new_name)
+    this.props.handleNodeRename(old_name, new_name)
+    document.getElementById('layer-rename-value').value = ''
   }
 
   render() {
@@ -567,6 +577,8 @@ export class ComputeNodeView extends React.Component {
     return (
       <div>
       <p>Compute {this.props.node_id}</p>
+      <input id='layer-rename-value' type='text'></input>
+      <button onClick={this.handleRename}>Rename</button>
       <LayerViewQuick layer={this.props.layer_data} />
       </div>
     );
@@ -581,8 +593,14 @@ export class LabelNodeView extends React.Component {
     handleConditionDeleted
     variables (from Workspace.state.user_input)
     conditions
+    handleNodeDeleted
     */
     super(props);
+    this.handleDelete = this.handleDelete.bind(this);
+  }
+
+  handleDelete(){
+    this.props.handleNodeDeleted(this.props.node_id)
   }
 
   render() {
@@ -590,6 +608,7 @@ export class LabelNodeView extends React.Component {
     return (
       <div>
       <p>Label {this.props.node_id}</p>
+      <button type="button" className="btn btn-danger" onClick={this.handleDelete}>Delete Edge</button>
       <h4>Conditions</h4>
       <h5>Add condition</h5>
       <GraphContainerConditionControls 
@@ -1055,6 +1074,76 @@ export class TypedInputView extends React.Component {
   }
 }
 
+export class MultiSelect extends React.Component {
+  constructor(props){
+    super(props)
+    this.state = {selectedOption: null, selectedLayer: null}
+    this.handleSubmit = this.handleSubmit.bind(this)
+  }
+
+  handleChange = (selectedOption) => {
+    this.setState({ selectedOption: selectedOption });
+  }
+
+  handleChangeLayer = (selectedOption) => {
+    this.setState({ selectedLayer: selectedOption });
+  }
+
+  handleSubmit () {
+    const selected = this.state.selectedOption.map((x) => x.value)
+    const layer = this.state.selectedLayer.value
+    this.props.handleSubmit(selected, layer)
+  }
+
+  render () {
+    let listItems = []
+    for(const unit_name of this.props.options){
+      listItems.push({value:unit_name, label:unit_name})
+    }
+
+    let listLayers = []
+    for(const layer_name of this.props.layers){
+      listLayers.push({value:layer_name, label:layer_name})
+    }
+
+    
+    return (
+      <div>
+        <form>
+        <div className="form-group row">
+        <label htmlFor='multi-unit-select' className="col-sm-2 col-form-label">
+        Select Units
+        </label>
+        <div id="multi-unit-select" className="col-sm-10">
+        <Select
+           onChange={this.handleChange}
+           options={listItems}
+           isMulti
+           closeMenuOnSelect={false}
+         />
+        </div>
+        </div>
+        
+        <div className="form-group row">
+        <label htmlFor='multi-layer-select' className="col-sm-2 col-form-label">
+        Select Compute Node
+        </label>
+        <div className="col-sm-10">
+          <div id="multi-layer-select">
+          <Select
+           onChange={this.handleChangeLayer}
+           options={listLayers}
+         />
+         </div>
+        </div>
+        </div>
+               
+         <button className="btn btn-primary btn-block" onClick={this.handleSubmit}>Add to model</button>
+         </form>  
+      </div>
+    )
+  }
+}
 
 export class Workspace extends React.Component {
   constructor(props) {
@@ -1089,6 +1178,7 @@ export class Workspace extends React.Component {
 
     this.handleUnitAdded = this.handleUnitAdded.bind(this);
     this.handleEdgeAdded = this.handleEdgeAdded.bind(this);
+    this.handleEdgeDeleted = this.handleEdgeDeleted.bind(this);
     this.handleFieldChange = this.handleFieldChange.bind(this);
     this.handleUnitUpload = this.handleUnitUpload.bind(this);
     this.handleWorkspaceUpload = this.handleWorkspaceUpload.bind(this);
@@ -1098,6 +1188,8 @@ export class Workspace extends React.Component {
     this.handleConditionDeleted = this.handleConditionDeleted.bind(this);
     this.handleAPIkey = this.handleAPIkey.bind(this);
     this.createUnitFromEsyn = this.createUnitFromEsyn.bind(this);
+    this.rename_layer = this.rename_layer.bind(this);
+    this.handleMultipleUnitsAdded = this.handleMultipleUnitsAdded.bind(this)
 
   }
   static defaultProps = {
@@ -1109,6 +1201,7 @@ export class Workspace extends React.Component {
     unit_name : name of the unit in this.state.available_units
     layer_name : name of a layer in this.container.layers
     name_in_layer : the name to use for the unit in the layer, defaults to unit_name
+    
     */
     let c = this.state.container
     //c.layers[layer_name].add_unit(this.state.available_units[unit_name])
@@ -1139,6 +1232,53 @@ export class Workspace extends React.Component {
     }
   }
 
+  handleMultipleUnitsAdded(unit_names, layer_name){
+    //unit_names : list of names of the units to add from this.state.available_units
+    //layer_name : name of a layer in this.container.layers
+    //the name_in_layer (as in handleUnitAdded) can only be set when a single unit is added
+    let can_add = true
+    let c = this.state.container
+    if(!c.layers.hasOwnProperty(layer_name)){
+      console.log("layer does not exist", layer_name)
+      can_add = false
+    }
+    unit_names.forEach((name) => {
+      if(!this.state.available_units.hasOwnProperty(name)){
+        console.log("unit does not exist", name)
+        can_add = false
+      }
+    })
+
+    if(can_add){
+      let do_update = true
+      for(const name of unit_names){
+        try {
+          c.add_unit_to_layer(layer_name, this.state.available_units[name])
+        }
+        catch(err) {
+          console.log(err)
+          do_update = false
+          break
+        }
+      }
+      if(do_update){
+        let all_inputs = this.state.user_input
+        for (const key of Object.keys(c.inputs.usable)) {
+          if(!this.state.user_input.hasOwnProperty(key)){
+            all_inputs[key] = Object.assign({ 'value':''}, c.inputs.usable[key])
+          } else {
+            all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
+          }
+        }
+        //should only setstate if all units were added successfully
+        this.setState({container: c, user_input: all_inputs})
+      } else {
+        alert("selected units cannot be added")
+      }
+    }
+    
+  }
+
   handleEdgeAdded(source_layer, target_layer){
     let c = this.state.container
     let can_add = true
@@ -1147,6 +1287,15 @@ export class Workspace extends React.Component {
 
     this.setState({container: c})
     
+  }
+
+  handleEdgeDeleted(label_id){
+    let c = this.state.container
+
+    c.delete_labelnode(label_id)
+
+    this.setState({container: c})
+    this.handleNodeSelected()
   }
 
   handleUnitUpload(unit){
@@ -1271,7 +1420,11 @@ export class Workspace extends React.Component {
   }
 
   handleNodeSelected(node){
-    this.setState({selected_node: node, selected_node_name: node.id(), selected_node_is_label: node.hasClass('labelnode')})
+    if(node === undefined){
+      this.setState({selected_node: '', selected_node_name: undefined, selected_node_is_label: undefined})
+    } else {
+      this.setState({selected_node: node, selected_node_name: node.id(), selected_node_is_label: node.hasClass('labelnode')})
+    }
   }
 
   handleConditionAdded(label_id, variable, operation, value, value_type){
@@ -1420,6 +1573,19 @@ export class Workspace extends React.Component {
     this.setState({container: c})
   }
 
+  rename_layer(old_name, new_name){
+    let c = this.state.container
+    let success = c.rename_layer(old_name, new_name)
+    if(success){
+      //somehow reset the node view
+      this.handleNodeSelected()
+      this.setState({container: c})
+    } else {
+      alert("could not rename")
+    }
+    
+  }
+
   run_model(){
     let input = {}
     for (const key in this.state.user_input) {
@@ -1457,6 +1623,7 @@ export class Workspace extends React.Component {
     const n_available_units = Object.keys(this.state.available_units).length
     const current_layers_opts = Object.keys(this.state.container.layers).map((x) => <option key={x}>{x}</option>)
     const graph_els = this.state.container.graph_els
+    //console.log("container has graph els", graph_els)
     const layout = {name: 'cose'}
 
     let node_contents
@@ -1467,6 +1634,7 @@ export class Workspace extends React.Component {
         node_contents = <ComputeNodeView 
           node_id={this.state.selected_node_name} 
           layer_data={this.state.container.layers[this.state.selected_node_name]}
+          handleNodeRename={this.rename_layer}
           ></ComputeNodeView>
       } else {
         node_contents = <LabelNodeView 
@@ -1475,6 +1643,7 @@ export class Workspace extends React.Component {
           handleConditionDeleted={this.handleConditionDeleted}
           variables={this.state.user_input}
           conditions={this.state.container.metadata.conditions[this.state.selected_node_name]}
+          handleNodeDeleted={this.handleEdgeDeleted}
           ></LabelNodeView>
       }
     }
@@ -1676,6 +1845,13 @@ export class Workspace extends React.Component {
               <button type="button" onClick={() => this.delete_layer()}>Delete Node</button>
               <h4>Add unit to model</h4>
                 <GraphContainerNodeControls handleUnitAdded={this.handleUnitAdded} layers={this.state.container.layer_order} units={Object.keys(this.state.available_units)}></GraphContainerNodeControls>
+
+              <h4>Add multiple units to model</h4>
+              <MultiSelect 
+              options={Object.keys(this.state.available_units)}
+              layers={this.state.container.layer_order}
+              handleSubmit={this.handleMultipleUnitsAdded}
+              ></MultiSelect>
               
                 <h4>Add edge to model</h4>
                 <GraphContainerEdgeControls handleEdgeAdded={this.handleEdgeAdded} layers={this.state.container.layer_order}></GraphContainerEdgeControls>
