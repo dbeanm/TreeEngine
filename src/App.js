@@ -155,9 +155,9 @@ export class EsynAvailableRow extends React.Component {
   }
 
   render() {
-
+    const btn_label = this.props.name_taken ? "Name in use" : "Create unit"
     return (
-      <tr key={this.props.i}><td>{this.props.project.label}</td><td>{this.props.project.last_edited}</td><td><button onClick={this.handleCreate}>Create unit</button></td></tr>
+      <tr key={this.props.i}><td>{this.props.project.label}</td><td>{this.props.project.last_edited}</td><td><button onClick={this.handleCreate} disabled={this.props.name_taken}>{btn_label}</button></td></tr>
     );
   }
 }
@@ -165,7 +165,6 @@ export class EsynAvailableRow extends React.Component {
 export class EsynAvailableTable extends React.Component {
   constructor(props) {
     super(props);
-
   }
 
   renderTableHeader() {
@@ -178,11 +177,12 @@ export class EsynAvailableTable extends React.Component {
  renderTableData() {
    let listItems = []
    let i = 0
+   const existing = new Set(this.props.existing)
     for(const [pg, proj] of Object.entries(this.props.projects)){
       listItems.push(<tr key={i}><td colSpan={3}><b>{pg}</b></td></tr>)
       i += 1
       for(const project of proj){
-        listItems.push(<EsynAvailableRow key={i} project={project} handleUnitAdded={this.props.handleUnitAdded}></EsynAvailableRow>)
+        listItems.push(<EsynAvailableRow key={i} project={project} handleUnitAdded={this.props.handleUnitAdded} name_taken={existing.has(project.label)}></EsynAvailableRow>)
         i += 1
       }
     }
@@ -1720,7 +1720,7 @@ export class Workspace extends React.Component {
 
           <div className="row mt-1">
             <div className="col">
-            <EsynAvailableTable projects={this.state.esyn_project_grps} handleUnitAdded={this.createUnitFromEsyn}></EsynAvailableTable>
+            <EsynAvailableTable projects={this.state.esyn_project_grps} handleUnitAdded={this.createUnitFromEsyn} existing={Object.keys(this.state.available_units)}></EsynAvailableTable>
                 </div>
             </div>
 
