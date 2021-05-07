@@ -563,7 +563,9 @@ export class GraphContainerConditionList extends React.Component {
 export class ComputeNodeView extends React.Component {
   constructor(props) {
     super(props);
-    this.handleRename = this.handleRename.bind(this)
+    this.handleRename = this.handleRename.bind(this);
+    this.handleUnitRename = this.handleUnitRename.bind(this);
+    this.handleUnitDelete = this.handleUnitDelete.bind(this);
   }
 
   handleRename(){
@@ -574,14 +576,40 @@ export class ComputeNodeView extends React.Component {
     document.getElementById('layer-rename-value').value = ''
   }
 
-  render() {
+  handleUnitRename(){
+    //send to
+    //this.props.handleUnitRenameInLayer()
+    const new_name = document.getElementById('new_unit_name_in_layer').value
+    const old_name = document.getElementById('old_unit_name_in_layer').value
+    const done = this.props.handleUnitRenameInLayer(this.props.layer_data.name, old_name, new_name)
+    if(done){
+      document.getElementById('new_unit_name_in_layer').value = ''
+    }
+  }
+  
+  handleUnitDelete(){
+    const old_name = document.getElementById('old_unit_name_in_layer').value
+    this.props.handleUnitDeleteInLayer(this.props.layer_data.name, old_name)
+  }
 
+  render() {
+    const name = this.props.node_id
+    let current_unit_names
+    if(this.props.layer_data !== undefined){
+      current_unit_names = Object.keys(this.props.layer_data.units).map((x) => <option key={x}>{x}</option>)
+    }
+    
     return (
       <div>
       <p>Compute {this.props.node_id}</p>
-      <input id='layer-rename-value' type='text'></input>
-      <button onClick={this.handleRename}>Rename</button>
-      <LayerViewQuick layer={this.props.layer_data} />
+      <input id='layer-rename-value' type='text' defaultValue={name}></input>
+      <button className='btn btn-primary' onClick={this.handleRename}>Rename Node</button>
+      <LayerViewQuick layer={this.props.layer_data} renameUnit={this.props.handleUnitRenameInLayer}/>
+      <p>Rename a unit in this layer</p>
+      <select id='old_unit_name_in_layer'>{current_unit_names}</select>
+      <input type='text' placeholder="New name" id='new_unit_name_in_layer'></input>
+      <button type='button' onClick={this.handleUnitRename} className='btn btn-success'>Rename</button>
+      <button type='button' onClick={this.handleUnitDelete} className='btn btn-danger'>Delete</button>
       </div>
     );
   }
@@ -706,13 +734,16 @@ export class LayerViewQuick extends React.Component {
     return header.map((key, index) => {
        return <th key={index}>{key}</th>
     })
- }
+  }
 
  renderTableData() {
   const units = Object.keys(this.props.layer.units)
   const listItems = units.map((unit_name) =>
     // Correct! Key should be specified inside the array.
-    <tr key={unit_name}><td>{unit_name}</td><td>{this.props.layer.units[unit_name].name}</td><td>warnings</td></tr>
+    <tr key={unit_name}><td>
+      {unit_name}
+      </td><td>{this.props.layer.units[unit_name].name}</td>
+      <td>actions/warnings</td></tr>
   );
 
    return ( listItems )
@@ -1191,7 +1222,8 @@ export class Workspace extends React.Component {
     this.createUnitFromEsyn = this.createUnitFromEsyn.bind(this);
     this.rename_layer = this.rename_layer.bind(this);
     this.handleMultipleUnitsAdded = this.handleMultipleUnitsAdded.bind(this)
-
+    this.handleUnitRenameInLayer = this.handleUnitRenameInLayer.bind(this);
+    this.handleUnitDeleteInLayer = this.handleUnitDeleteInLayer.bind(this);
   }
   static defaultProps = {
     container: new Container()
@@ -1278,6 +1310,47 @@ export class Workspace extends React.Component {
       }
     }
     
+  }
+
+  handleUnitRenameInLayer(layer, old_name, new_name){
+    let c = this.state.container
+    const ok = c.rename_unit_in_layer(layer, old_name, new_name)
+    if(ok){
+      let all_inputs = this.state.user_input
+      for (const key of Object.keys(c.inputs.usable)) {
+        if(!this.state.user_input.hasOwnProperty(key)){
+          all_inputs[key] = Object.assign({ 'value':''}, c.inputs.usable[key])
+        } else {
+          all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
+        }
+      }
+  
+      this.setState({container: c, user_input: all_inputs})
+    } else {
+      alert("This name cannot be used")
+    }
+    return ok
+  }
+
+  handleUnitDeleteInLayer(layer, unit_name){
+    let c = this.state.container
+    const ok = c.delete_unit_from_layer(layer, unit_name)
+    if(ok){
+      console.log("core deleted unit from layer, update state")
+      let all_inputs = this.state.user_input
+      for (const key of Object.keys(c.inputs.usable)) {
+        if(!this.state.user_input.hasOwnProperty(key)){
+          all_inputs[key] = Object.assign({ 'value':''}, c.inputs.usable[key])
+        } else {
+          all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
+        }
+      }
+      console.log("setting container",c)
+      this.setState({container: c, user_input: all_inputs})
+    } else {
+      alert("Failed to delete unit")
+    }
+    return ok
   }
 
   handleEdgeAdded(source_layer, target_layer){
@@ -1635,6 +1708,8 @@ export class Workspace extends React.Component {
           node_id={this.state.selected_node_name} 
           layer_data={this.state.container.layers[this.state.selected_node_name]}
           handleNodeRename={this.rename_layer}
+          handleUnitRenameInLayer={this.handleUnitRenameInLayer}
+          handleUnitDeleteInLayer={this.handleUnitDeleteInLayer}
           ></ComputeNodeView>
       } else {
         node_contents = <LabelNodeView 
