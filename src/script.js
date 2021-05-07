@@ -530,6 +530,34 @@ export class GraphContainer {
 		this.resolve_inputs()
 	}
 
+	delete_unit_from_layer(layer_name, unit_name){
+		console.log(`deleting unit ${unit_name} from ${layer_name}`)
+		try {
+			this.layers[layer_name].delete_unit(unit_name)
+		}
+		catch (err) {
+			console.log(err)
+			return false
+		}
+		this.resolve_inputs()
+		return true
+	}
+
+	rename_unit_in_layer(layer_name, old_name, new_name){
+		console.log(`renaming unit ${old_name} to ${new_name} in layer ${layer_name}`)
+		let ok
+		try {
+			ok = this.layers[layer_name].rename_unit(old_name, new_name)
+		}
+		catch(err){
+			console.log(err)
+			return false
+		}
+		//even if rename failed it should always be safe to resolve inputs
+		this.resolve_inputs()
+		return ok
+	}
+
 	update_graph_validity(){
 		let root_nodes = this.cy.nodes().roots()
 		let valid = true
@@ -861,6 +889,12 @@ export class GraphContainer {
 
 	resolve_inputs(){
 		this.inputs = {'conflict': {}, 'usable': {}}
+		this.variables = {}
+		//initialise this.variables from layers
+		for (const layer_name of Object.keys(this.layers)){
+			this.variables[layer_name] = this.layers[layer_name].variables
+		}
+		
 		let seen = {}
 		let name;
 		for (const [layer_name, layer_variables] of Object.entries(this.variables)) {
@@ -938,7 +972,7 @@ export class Layer {
 		}
 	}
 
-	add_unit(unit, unit_name = unit.name ) {
+	add_unit(unit, unit_name = unit.name) {
 		/*
 		add a tree and it's variables to the layer
 		cannot currently handle overwriting an existing unit name
@@ -963,6 +997,27 @@ export class Layer {
 		this.state[unit_name] = undefined
 	}
 
+	delete_unit(unit_name){
+		delete this.units[unit_name]
+		this.refresh_all_variables()
+		this.reset_state()
+		this.size = Object.keys(this.units).length
+	}
+
+	rename_unit(old_name, new_name){
+		//copy over the unit then delete it and refresh variables
+		try {
+			this.add_unit(this.units[old_name], new_name)
+		}
+		catch(err) {
+			console.log(err)
+			return false
+		}
+		
+		this.delete_unit(old_name)
+		return true
+	}
+
 	add_variable(scope, name, type) {
 		//conflicts need to be tracked as variables are added. 
 		if(!this.variables.hasOwnProperty(scope)){
@@ -980,7 +1035,16 @@ export class Layer {
 	}
 
 	refresh_all_variables() {
-		//could be useful e.g. once there is a way to remove a Unit
+		console.log(`Layer ${this.name} refreshing all variables`)
+		this.inputs = {}
+		this.variables = {}
+		for (const [unit_name, unit] of Object.entries(this.units)){
+			for (const [vname, vdata] of Object.entries(unit.variables)) {
+				console.log(`adding variable ${vname} from ${unit_name}`);
+				this.add_variable(unit_name, vname, vdata.type)
+			}
+		}
+		
 	}
 
 	auto_resolve(){
