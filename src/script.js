@@ -1014,7 +1014,7 @@ export class Layer {
 			return false
 		}
 		
-		this.delete_unit(old_name)
+		this.delete_unit(old_name) //also calls refresh_all_variables
 		return true
 	}
 
