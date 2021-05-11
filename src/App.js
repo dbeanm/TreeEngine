@@ -54,6 +54,22 @@ export class UnitView extends React.Component {
   }
 }
 
+export class UnitResultView extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+
+    return (
+      <div>
+        <p>{this.props.unit_name} ({this.props.unit.name}) </p>
+        <ModelStateView modelstate={this.props.result}></ModelStateView>
+      </div>
+    );
+  }
+}
+
 export class ModelStateView extends React.Component {
   constructor(props) {
     super(props);
@@ -724,6 +740,32 @@ export class LayerView extends React.Component {
   }
 }
 
+export class LayerResultView extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    if(this.props.layer === undefined){
+      return (<p>Empty</p>)
+    }
+    const units = Object.keys(this.props.layer.units)
+    const listItems = units.map((unit_name) =>
+      // Correct! Key should be specified inside the array.
+      <li key={unit_name}><UnitResultView key={unit_name} unit_name={unit_name} unit={this.props.layer.units[unit_name]} result={this.props.layer.state[unit_name]}/></li>
+    );
+
+    return (
+      <div>
+        <p>{this.props.layer.name} ({this.props.layer.size} units)</p>
+          <ul>
+            {listItems}
+          </ul> 
+      </div>
+    );
+  }
+}
+
 export class LayerViewQuick extends React.Component {
   constructor(props) {
     super(props);
@@ -796,6 +838,37 @@ export class ContainerView extends React.Component {
         <p>Full input list</p>
         <ContainerVariablesView variables={this.props.container.variables}></ContainerVariablesView>
         <p>Layers ({layers.length}):</p>
+        <ul>
+          {listItems}
+        </ul>
+      </div>
+    );
+  }
+}
+
+export class ResultsView extends React.Component {
+  constructor(props) {
+    super(props);
+  
+  }
+  static defaultProps = {
+    container: new Container(),
+  }
+
+  render() {
+    const layers = this.props.container.layer_order
+    let listItems = layers.map((layer_name) =>
+      // Correct! Key should be specified inside the array.
+      // <ListItem key={layer_name} name={layer_name} />
+      <li key={layer_name}><LayerResultView key={layer_name} layer={this.props.container.layers[layer_name]} /></li>
+    );
+    if (listItems.length == 0){
+      listItems = [<li key={1}>Nothing to display</li>]
+    }
+
+    return (
+      <div className="containerresultview">
+        <p>Full Results</p>        
         <ul>
           {listItems}
         </ul>
@@ -1745,40 +1818,22 @@ export class Workspace extends React.Component {
         <div className="row">
           <div className='col'>
         <nav>
-          <div class="nav nav-tabs" id="nav-tab" role="tablist">
-          <a class="nav-item nav-link active" id="nav-workspace-detail-tab" data-toggle="tab" href="#nav-workspace-detail" role="tab" aria-controls="nav-workspace-detail" aria-selected="true">Model Detail</a>
-            <a class="nav-item nav-link" id="nav-home-tab" data-toggle="tab" href="#nav-home" role="tab" aria-controls="nav-home" aria-selected="false">Model Design</a>
-            <a class="nav-item nav-link" id="nav-units-tab" data-toggle="tab" href="#nav-units" role="tab" aria-controls="nav-units" aria-selected="false">Available Units <span class="badge badge-light">{n_available_units}</span></a>
-            <a class="nav-item nav-link" id="nav-user-input-tab" data-toggle="tab" href="#nav-user-input" role="tab" aria-controls="nav-user-input" aria-selected="false">Model Input {input_badge}</a>
-            <a class="nav-item nav-link" id="nav-save-workspace-tab" data-toggle="tab" href="#nav-save-workspace" role="tab" aria-controls="nav-save-workspace" aria-selected="false">Save/Load</a>
-            <a class="nav-item nav-link" id="nav-testing-tab" data-toggle="tab" href="#nav-testing" role="tab" aria-controls="nav-testing" aria-selected="false">Testing</a>
-            <a class="nav-item nav-link" id="nav-cytoscape-tab" data-toggle="tab" href="#nav-graph" role="tab" aria-controls="nav-graph" aria-selected="false">Graph</a>
+          <div className="nav nav-tabs" id="nav-tab" role="tablist">
+          <a className="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-home" role="tab" aria-controls="nav-home" aria-selected="true">Model Design</a>
+          <a className="nav-item nav-link" id="nav-workspace-detail-tab" data-toggle="tab" href="#nav-workspace-detail" role="tab" aria-controls="nav-workspace-detail" aria-selected="false">Model Detail</a>
+            <a className="nav-item nav-link" id="nav-units-tab" data-toggle="tab" href="#nav-units" role="tab" aria-controls="nav-units" aria-selected="false">Available Units <span className="badge badge-light">{n_available_units}</span></a>
+            <a className="nav-item nav-link" id="nav-user-input-tab" data-toggle="tab" href="#nav-user-input" role="tab" aria-controls="nav-user-input" aria-selected="false">Model Input {input_badge}</a>
+            <a className="nav-item nav-link" id="nav-save-workspace-tab" data-toggle="tab" href="#nav-save-workspace" role="tab" aria-controls="nav-save-workspace" aria-selected="false">Save/Load</a>
+            <a className="nav-item nav-link" id="nav-testing-tab" data-toggle="tab" href="#nav-testing" role="tab" aria-controls="nav-testing" aria-selected="false">Testing</a>
           </div>
         </nav>
         </div>
         </div>
 
         <div className='row mt-1'>
-          <div class="col tab-content" id="nav-tabContent">
-          <div class="tab-pane fade" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">
-              <div className="row">
-              <div className="col">
-              <h4>Add unit to model</h4>
-                <UnitAdderView handleUnitAdded={this.handleUnitAdded} layers={this.state.container.layer_order} units={Object.keys(this.state.available_units)}></UnitAdderView>
-              </div>
-            </div>
+          <div className="col tab-content" id="nav-tabContent">
 
-            <div className="row mt-1">
-            <div className="col">
-              <h4>Layers</h4>
-              <button type="button" className="btn btn-primary btn-block" onClick={() => this.add_layer()}>Create new layer</button>
-            </div>
-            </div>
-
-          </div>
-
-
-          <div class="tab-pane fade" id="nav-units" role="tabpanel" aria-labelledby="nav-units-tab">
+          <div className="tab-pane fade" id="nav-units" role="tabpanel" aria-labelledby="nav-units-tab">
           <div className="row mt-1">
           <div className="col">
           <FileInput mode="EsynDecisionTree" handleUpload={this.handleUnitUpload} msg="an Esyn DecisionTree"></FileInput>
@@ -1813,7 +1868,7 @@ export class Workspace extends React.Component {
           </div>
 
 
-          <div class="tab-pane fade" id="nav-save-workspace" role="tabpanel" aria-labelledby="nav-save-workspace-tab">
+          <div className="tab-pane fade" id="nav-save-workspace" role="tabpanel" aria-labelledby="nav-save-workspace-tab">
           <div className="row mt-1">
           <div className="col">
           <button type="button" className="btn btn-primary" onClick={() => this.download_workspace()}>Save</button>
@@ -1824,7 +1879,7 @@ export class Workspace extends React.Component {
           </div>
 
 
-          <div class="tab-pane fade" id="nav-testing" role="tabpanel" aria-labelledby="nav-testing-tab">
+          <div className="tab-pane fade" id="nav-testing" role="tabpanel" aria-labelledby="nav-testing-tab">
           <div className="row mt-1">
           <div className="col">
           <button type="button" className="btn btn-primary" onClick={() => this.fetch_models()}>Load dummy models to workspace</button>
@@ -1832,7 +1887,7 @@ export class Workspace extends React.Component {
           </div>
           </div>
 
-          <div class="tab-pane fade" id="nav-graph" role="tabpanel" aria-labelledby="nav-graph-tab">
+          <div className="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">
           <div className="row mt-1">
           <div className="col">
             <CytoscapeComponent
@@ -1906,9 +1961,9 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
           <div className="col">
           
-              <button type="button" onClick={() => this.add_layer()}>Add Compute Node</button>
+              <button type="button" className='btn btn-primary' onClick={() => this.add_layer()}>Add Compute Node</button>
               <select id="delete_layer_select">{current_layers_opts}</select>
-              <button type="button" onClick={() => this.delete_layer()}>Delete Node</button>
+              <button type="button" className='btn btn-danger' onClick={() => this.delete_layer()}>Delete Node</button>
               <h4>Add unit to model</h4>
                 <GraphContainerNodeControls handleUnitAdded={this.handleUnitAdded} layers={this.state.container.layer_order} units={Object.keys(this.state.available_units)}></GraphContainerNodeControls>
 
@@ -1928,7 +1983,7 @@ export class Workspace extends React.Component {
           </div>
 
 
-          <div class="tab-pane fade show active" id="nav-workspace-detail" role="tabpanel" aria-labelledby="nav-workspace-detail-tab">
+          <div className="tab-pane fade" id="nav-workspace-detail" role="tabpanel" aria-labelledby="nav-workspace-detail-tab">
           <div className="row mt-1">
             <div className="col">
 
@@ -1936,7 +1991,7 @@ export class Workspace extends React.Component {
             </div>
             </div>
 
-            <div className="row mt-1">
+            {/* <div className="row mt-1">
             <div className="col">
             <div className="card border-dark text-center mb-3 add-layer-box" >
               <div className="card-body text-secondary" onClick={() => this.add_layer()}>
@@ -1945,13 +2000,13 @@ export class Workspace extends React.Component {
               </div>
             </div>
             </div>
-            </div>
+            </div> */}
           </div>
 
           
 
 
-          <div class="tab-pane fade" id="nav-user-input" role="tabpanel" aria-labelledby="nav-user-input-tab">
+          <div className="tab-pane fade" id="nav-user-input" role="tabpanel" aria-labelledby="nav-user-input-tab">
 
           <div className="row mt-1">
           <div className="col">
@@ -1965,6 +2020,14 @@ export class Workspace extends React.Component {
             <button type="button" className="btn btn-success" onClick={() => this.run_model()} disabled={!model_can_build}>Run</button>
           </div>
         </div>
+
+        <div className="row mt-1">
+          <div className="col">
+            <ResultsView container={this.state.container}></ResultsView>
+          </div>
+        </div>
+
+        
 
           <div className="row mt-1">
           <div className="col">
@@ -1993,24 +2056,24 @@ export class ToolView extends React.Component {
 
     return (
       <div className="container">
-      <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <a class="navbar-brand" href="#">TreeEngine-0.0.1a</a>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
+      <nav className="navbar navbar-expand-lg navbar-light bg-light">
+      <a className="navbar-brand" href="#">TreeEngine-0.0.1a</a>
+      <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span className="navbar-toggler-icon"></span>
       </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav">
-          <li class="nav-item active">
-            <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+      <div className="collapse navbar-collapse" id="navbarNav">
+        <ul className="navbar-nav">
+          <li className="nav-item active">
+            <a className="nav-link" href="#">Home <span className="sr-only">(current)</span></a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Features</a>
+          <li className="nav-item">
+            <a className="nav-link" href="#">Features</a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Pricing</a>
+          <li className="nav-item">
+            <a className="nav-link" href="#">Pricing</a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link disabled" href="#">Disabled</a>
+          <li className="nav-item">
+            <a className="nav-link disabled" href="#">Disabled</a>
           </li>
         </ul>
       </div>
