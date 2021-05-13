@@ -1414,6 +1414,28 @@ export class Workspace extends React.Component {
     container: new GraphContainer()
   }
 
+  updateInputObjectFromContainer(c, reset){
+    //could add a new mode to keep old values if the variable still exists, otherwise reset
+    //so that when a unit is deleted the current values for remaining variables aren't lost
+    let all_inputs
+    if(reset){
+      console.log("UI resetting user input")
+      all_inputs = {}
+    } else {
+      console.log("UI merging user input")
+      all_inputs = this.state.user_input
+    }
+
+      for (const key of Object.keys(c.inputs.usable)) {
+        if(!all_inputs.hasOwnProperty(key)){
+          all_inputs[key] = Object.assign({ 'value':''}, c.inputs.usable[key])
+        } else {
+          all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
+        }
+      }
+      return all_inputs
+  }
+
   handleUnitAdded(unit_name, layer_name, name_in_layer = unit_name){
     /*
     unit_name : name of the unit in this.state.available_units
@@ -1437,18 +1459,12 @@ export class Workspace extends React.Component {
     if(can_add){
       c.add_unit_to_layer(layer_name, this.state.available_units[unit_name], name_in_layer)
 
-      let all_inputs = this.state.user_input
-      for (const key of Object.keys(c.inputs.usable)) {
-        if(!this.state.user_input.hasOwnProperty(key)){
-          all_inputs[key] = Object.assign({ 'value':''}, c.inputs.usable[key])
-        } else {
-          all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
-        }
-      }
+      let all_inputs = this.updateInputObjectFromContainer(c)
   
       this.setState({container: c, user_input: all_inputs})
     }
   }
+
 
   handleMultipleUnitsAdded(unit_names, layer_name){
     //unit_names : list of names of the units to add from this.state.available_units
@@ -1480,14 +1496,8 @@ export class Workspace extends React.Component {
         }
       }
       if(do_update){
-        let all_inputs = this.state.user_input
-        for (const key of Object.keys(c.inputs.usable)) {
-          if(!this.state.user_input.hasOwnProperty(key)){
-            all_inputs[key] = Object.assign({ 'value':''}, c.inputs.usable[key])
-          } else {
-            all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
-          }
-        }
+        let all_inputs = this.updateInputObjectFromContainer(c, false)
+
         //should only setstate if all units were added successfully
         this.setState({container: c, user_input: all_inputs})
       } else {
@@ -1501,14 +1511,7 @@ export class Workspace extends React.Component {
     let c = this.state.container
     const ok = c.rename_unit_in_layer(layer, old_name, new_name)
     if(ok){
-      let all_inputs = this.state.user_input
-      for (const key of Object.keys(c.inputs.usable)) {
-        if(!this.state.user_input.hasOwnProperty(key)){
-          all_inputs[key] = Object.assign({ 'value':''}, c.inputs.usable[key])
-        } else {
-          all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
-        }
-      }
+      let all_inputs = this.updateInputObjectFromContainer(c, false)
   
       this.setState({container: c, user_input: all_inputs})
     } else {
@@ -1522,14 +1525,7 @@ export class Workspace extends React.Component {
     const ok = c.delete_unit_from_layer(layer, unit_name)
     if(ok){
       console.log("core deleted unit from layer, update state")
-      let all_inputs = this.state.user_input
-      for (const key of Object.keys(c.inputs.usable)) {
-        if(!this.state.user_input.hasOwnProperty(key)){
-          all_inputs[key] = Object.assign({ 'value':''}, c.inputs.usable[key])
-        } else {
-          all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
-        }
-      }
+      let all_inputs = this.updateInputObjectFromContainer(c, true)
       console.log("setting container",c)
       this.setState({container: c, user_input: all_inputs})
     } else {
@@ -1666,14 +1662,7 @@ export class Workspace extends React.Component {
     
 
     //user inputs
-    let all_inputs = {}
-    for (const key of Object.keys(c.inputs.usable)) {
-      if(!this.state.user_input.hasOwnProperty(key)){
-        all_inputs[key] = Object.assign({ 'value':''}, c.inputs.usable[key])
-      } else {
-        all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
-      }
-    }
+    let all_inputs = this.updateInputObjectFromContainer(c, true)
     
     //set workspace state
     this.setState({'available_units': au, 'container': c, 'user_input': all_inputs})

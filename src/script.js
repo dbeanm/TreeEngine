@@ -153,6 +153,8 @@ export class GraphContainer {
 		delete this.layers[name]
 		delete this.variables[name]
 		this.layer_order = Object.keys(this.layers)
+		//update links
+		this.unit2input.delete_layer(name)
 
 		//update cy
 		let selected = this.cy.getElementById(name)
@@ -170,7 +172,7 @@ export class GraphContainer {
 	}
 
 	rename_layer(old_name, new_name){
-		console.log('GraphContainer trying to rename from', old_name,'to',new_name)
+		console.log('GraphContainer trying to rename layer from', old_name,'to',new_name)
 		if(this.layers.hasOwnProperty(new_name)){
 			throw new AddLayerError(`Layer name already exists: ${new_name}`)
 		} else if(!this.layers.hasOwnProperty(old_name)){
@@ -212,6 +214,9 @@ export class GraphContainer {
 			//copy metadata
 			this.layers[new_name] = this.layers[old_name]
 			this.variables[new_name] = this.variables[old_name]
+			this.layers[new_name].rename(new_name) //update layer internal name
+			//update links
+			this.unit2input.rename_layer(old_name, new_name)
 
 			//delete the old node
 			this.delete_layer(old_name)
@@ -428,6 +433,8 @@ export class GraphContainer {
 			console.log(err)
 			return false
 		}
+		//update links
+		this.unit2input.delete_unit(layer_name, unit_name)
 		this.resolve_inputs()
 		return true
 	}
@@ -441,6 +448,11 @@ export class GraphContainer {
 		catch(err){
 			console.log(err)
 			return false
+		}
+		//only update link if rename actually happened
+		//since that rename was ok then the link rename must also be
+		if(ok){
+			this.unit2input.rename_unit(layer_name, old_name, new_name)
 		}
 		//even if rename failed it should always be safe to resolve inputs
 		this.resolve_inputs()
@@ -930,6 +942,10 @@ export class Layer {
 		this.refresh_all_variables()
 		this.reset_state()
 		this.size = Object.keys(this.units).length
+	}
+
+	rename(name){
+		this.name = name
 	}
 
 	rename_unit(old_name, new_name){
@@ -1736,8 +1752,15 @@ class ID2Name2D {
 	}
 
 	delete_unit(layer_name, unit_name){
-		delete this.map[layer_name][unit_name]
-		this.reverse()
+		//there has to at least be an object for the layer in the map
+		//then deleting a non-existant unit key is fine if there is no link
+		const layer_exists = this.map.hasOwnProperty(layer_name)
+
+		if(layer_exists){
+			delete this.map[layer_name][unit_name]
+			this.reverse()
+		}
+		
 	}
 
 	delete_link(variable){
@@ -1756,21 +1779,35 @@ class ID2Name2D {
 	}
 
 	rename_layer(old_name, new_name){
+		//if old_name doesn't exist it just does nothing rather than raise an error
 		if(this.map.hasOwnProperty(new_name)){
 			throw new DuplicateEntryError(`Value already exists: ${new_name}`)
 		}
-		this.map[new_name] = this.map[old_name]
-		this.delete_layer(old_name)
-		this.reverse()
+		if(this.map.hasOwnProperty(old_name)){
+			this.map[new_name] = this.map[old_name]
+			this.delete_layer(old_name)
+			this.reverse()
+		}
 	}
 
 	rename_unit(layer_name, old_name, new_name){
-		if(this.map[layer_name].hasOwnProperty(new_name)){
-			throw new DuplicateEntryError(`Value already exists: ${new_name}`)
+		//can only rename if there is an existing link to rename
+		//check if either of old_name or new_name does not exist
+		const layer_exists = this.map.hasOwnProperty(layer_name)
+		let unit_exists = false
+		if(layer_exists){
+			unit_exists = this.map[layer_name].hasOwnProperty(old_name)
 		}
-		this.map[layer_name][new_name] = this.map[layer_name][old_name]
-		this.delete_unit(layer_name, old_name)
-		this.reverse()
+
+		if(layer_exists && unit_exists){
+			if(this.map[layer_name].hasOwnProperty(new_name)){
+				throw new DuplicateEntryError(`Value already exists: ${new_name}`)
+			}
+			this.map[layer_name][new_name] = this.map[layer_name][old_name]
+			this.delete_unit(layer_name, old_name)
+			this.reverse()
+		}
+		
 	}
 
 	reverse(){
