@@ -1,5 +1,5 @@
 import React from 'react';
-import {Unit, Layer, DummyModel, GraphContainer, Container, EsynDecisionTree, ModelState} from './script.js';
+import {Unit, Layer, DummyModel, GraphContainer, EsynDecisionTree, ModelState} from './script.js';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from "cytoscape";
 import Select from 'react-select';
@@ -319,7 +319,7 @@ export class GraphContainerNodeControls extends React.Component {
         To Compute Node
         </label>
         <div className="col-sm-10">
-        <select id='adder-layer-select' className="custom-select" onChange={this.handleChange} name="layer">
+        <select id='adder-layer-select' className="custom-select" name="layer">
           {layeropts}
         </select> 
         </div>
@@ -330,7 +330,7 @@ export class GraphContainerNodeControls extends React.Component {
         With name
         </label>
         <div className="col-sm-10">
-        <input type="text" name="name" id='adder-name-select' className="form-control"></input>
+        <input type="text" name="name" placeholder="Selected unit name" id='adder-name-select' className="form-control"></input>
         </div>
         </div>
 
@@ -571,6 +571,114 @@ export class GraphContainerConditionList extends React.Component {
         Conditions: {n_conditions}
       <select id='cond-list-select' multiple="multiple" onChange={this.handleChange}>{conds}</select>
       <button onClick={this.handleDelete}>Delete Selected</button>
+      </div>
+    );
+  }
+}
+
+export class UnitLinkView extends React.Component {
+  constructor(props) {
+    /*
+    layers
+    links
+    variables = state.container.inputs.usable
+    */
+    super(props);
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.onLayerChange = this.onLayerChange.bind(this);
+    this.state = {layer:null}
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    let els = event.target.elements
+    const l = els.layer.value
+    const u = els.unit.value
+    const v = els.variable.value
+    console.log(`send request to link ${u} to ${v} in layer ${l}`)
+    const ok = this.props.handleLinkAdded(l, u, v)
+    return ok
+  }
+
+  onLayerChange(event) {
+    this.setState({'layer': event.target.value})
+  }
+
+  renderTableHeader() {
+    let header = ["Variable", "Used", "Linked", "Actions"]
+    return header.map((key, index) => {
+       return <th key={index}>{key}</th>
+    })
+  }
+
+ renderTableData() {
+  const linked_vars = this.props.links.get_linked_variables()
+  const listItems = linked_vars.map((vname) =>
+    // Correct! Key should be specified inside the array.
+    <tr key={vname}><td>
+      {vname}
+      </td>
+      <td>{this.props.variables[vname].appears.join(', ')}</td>
+      <td>{this.props.links.get_variable_str(vname)}</td>
+      <td><button className="btn btn-sm btn-warning" onClick={() => this.props.handleLinkDeleted(vname)}>Unlink</button></td></tr>
+  );
+
+   return ( listItems )
+  }
+
+  render() {
+    const variableopts = [<option key={''}>Select a variable</option>].concat(Object.keys(this.props.variables).map((x) => <option key={x}>{x}</option>))
+    const layeropts = [<option key={''}>Select a layer</option>].concat(Object.keys(this.props.layer2units).map((x) => <option key={x}>{x}</option>))
+    let unitopts = []
+    if (this.props.layer2units.hasOwnProperty(this.state.layer)){
+      unitopts = this.props.layer2units[this.state.layer].map((x) => <option key={x}>{x}</option>)
+    }
+    
+    // const variableopts = 
+    return (
+      <div>
+      <form onSubmit={this.handleSubmit}>
+        <div className="form-group row">
+        <label htmlFor='adder-unit-select' className="col-sm-2 col-form-label">
+        Link variable
+        </label>
+        <div className="col-sm-10">
+        <select id='adder-unit-select' className="custom-select" name="variable">
+          {variableopts}
+        </select>
+        </div>
+        </div>
+
+        <div className="form-group row">
+        <label htmlFor='adder-layer-select' className="col-sm-2 col-form-label">
+        To layer:
+        </label>
+        <div className="col-sm-10">
+        <select id='adder-layer-select' className="custom-select" onChange={this.onLayerChange} name="layer" value={this.state.layer} >
+          {layeropts}
+        </select> 
+        </div>
+        </div>
+
+        <div className="form-group row">
+        <label htmlFor='adder-layer-select' className="col-sm-2 col-form-label">
+        Unit:
+        </label>
+        <div className="col-sm-10">
+        <select id='adder-layer-select' className="custom-select" onChange={this.handleChange} name="unit">
+          {unitopts}
+        </select> 
+        </div>
+        </div>
+
+        <input type="submit" value="Add to model" className="btn btn-primary btn-block"/>
+      </form>
+      <table className="model-input-table table">
+        <tbody>
+          <tr>{this.renderTableHeader()}</tr>
+          {this.renderTableData()}
+        </tbody>
+      </table>
       </div>
     );
   }
@@ -821,7 +929,7 @@ export class ContainerView extends React.Component {
   
   }
   static defaultProps = {
-    container: new Container(),
+    container: new GraphContainer(),
   }
 
   render() {
@@ -852,7 +960,7 @@ export class ResultsView extends React.Component {
   
   }
   static defaultProps = {
-    container: new Container(),
+    container: new GraphContainer(),
   }
 
   render() {
@@ -939,7 +1047,7 @@ export class ContainerInputManualView extends React.Component {
   }
 
   renderTableHeader() {
-    let header = ["Variable", "Value"]
+    let header = ["Variable", "Value", "Link"]
     return header.map((key, index) => {
        return <th key={index}>{key}</th>
     })
@@ -955,6 +1063,7 @@ export class ContainerInputManualView extends React.Component {
        const id_true = `${name}_true`
        const id_false = `${name}_false`
        const id_unknown = `${name}_unknown`
+       const set_by = this.props.unit2input.get_variable_str(name)
        //console.log('creating input el for ',name, type, value)
        let badge
        if(state == "warn"){
@@ -1017,6 +1126,7 @@ export class ContainerInputManualView extends React.Component {
       listItems.push(<tr key={name}>
         <td>{name}{badge}</td>
         <td>{in_el}</td>
+        <td>{set_by}</td>
       </tr>)
      }
    }
@@ -1297,9 +1407,11 @@ export class Workspace extends React.Component {
     this.handleMultipleUnitsAdded = this.handleMultipleUnitsAdded.bind(this)
     this.handleUnitRenameInLayer = this.handleUnitRenameInLayer.bind(this);
     this.handleUnitDeleteInLayer = this.handleUnitDeleteInLayer.bind(this);
+    this.handleLinkAdded = this.handleLinkAdded.bind(this);
+    this.handleLinkDeleted = this.handleLinkDeleted.bind(this);
   }
   static defaultProps = {
-    container: new Container()
+    container: new GraphContainer()
   }
 
   handleUnitAdded(unit_name, layer_name, name_in_layer = unit_name){
@@ -1426,6 +1538,28 @@ export class Workspace extends React.Component {
     return ok
   }
 
+  handleLinkAdded(layer_name, unit_name, variable_name){
+    let c = this.state.container
+    const ok = c.link_input_to_unit(variable_name, unit_name, layer_name)
+    if(ok){
+      this.setState({container:c})
+    } else {
+      alert("could not create link")
+    }
+    return ok
+  }
+
+  handleLinkDeleted(variable_name){
+    let c = this.state.container
+    const ok = c.unlink_input(variable_name)
+    if(ok){
+      this.setState({container:c})
+    } else {
+      alert("could not delete link")
+    }
+    return ok
+  }
+
   handleEdgeAdded(source_layer, target_layer){
     let c = this.state.container
     let can_add = true
@@ -1519,11 +1653,14 @@ export class Workspace extends React.Component {
       c = new GraphContainer([], '')
       c.load(ws.container)
       console.log("container is loaded", c)
-    } else if(ws.container.container_type == "Plain") {
-      c = new Container([], '')
-      c.load(ws.container)
-      console.log("container is loaded", c)
-    } else {
+    }
+    //no longer attempt to load plain container
+    // } else if(ws.container.container_type == "Plain") {
+    //   c = new Container([], '')
+    //   c.load(ws.container)
+    //   console.log("container is loaded", c)
+    // } 
+    else {
       throw new ContainerNotRecognisedError("uploaded container type not valid")
     }
     
@@ -1800,6 +1937,11 @@ export class Workspace extends React.Component {
     const listItems = Object.keys(this.state.available_units).map((unit_name) => 
     <UnitAvailableView key={unit_name} unit_key={unit_name} unit={this.state.available_units[unit_name]} handleDelete={this.handleAvailableUnitDeleted} /> 
     );    
+
+    let layer2units = {}
+    for(const [layer_name, layer_data] of Object.entries(this.state.container.layers)){
+      layer2units[layer_name] = Object.keys(layer_data['units'])
+    }
     
 
     return (
@@ -1960,22 +2102,43 @@ export class Workspace extends React.Component {
           </div>
           <div className="row mt-1">
           <div className="col">
-          
+              
+              <h4>Graph structure</h4>
+              <h5>Nodes</h5>
               <button type="button" className='btn btn-primary' onClick={() => this.add_layer()}>Add Compute Node</button>
+              <br />
               <select id="delete_layer_select">{current_layers_opts}</select>
-              <button type="button" className='btn btn-danger' onClick={() => this.delete_layer()}>Delete Node</button>
-              <h4>Add unit to model</h4>
+              <button type="button" className='btn btn-danger' onClick={() => this.delete_layer()}>Delete Compute Node</button>
+
+              <h5>Add Edges</h5>
+                <GraphContainerEdgeControls handleEdgeAdded={this.handleEdgeAdded} layers={this.state.container.layer_order}></GraphContainerEdgeControls>
+
+              <h4>Compute units</h4>
+              <h5>Add single unit to graph</h5>
+              <p>By default a unit will keep its own name in a node. You can override that name locally.</p>
                 <GraphContainerNodeControls handleUnitAdded={this.handleUnitAdded} layers={this.state.container.layer_order} units={Object.keys(this.state.available_units)}></GraphContainerNodeControls>
 
-              <h4>Add multiple units to model</h4>
+              <h5>Add multiple units to graph</h5>
+              <p>Add multiple compute units to a node at once. They will use their default names. You can edit the name later by selecting the node. </p>
               <MultiSelect 
               options={Object.keys(this.state.available_units)}
               layers={this.state.container.layer_order}
               handleSubmit={this.handleMultipleUnitsAdded}
               ></MultiSelect>
               
-                <h4>Add edge to model</h4>
-                <GraphContainerEdgeControls handleEdgeAdded={this.handleEdgeAdded} layers={this.state.container.layer_order}></GraphContainerEdgeControls>
+              <h4>Create link to variable</h4>
+              <p>Add and remove links from a compute unit in a node and a variable in the overall model. When a variable is linked to a unit, the value of the variable is set to the output of the unit.</p>
+              <UnitLinkView
+              handleLinkAdded={this.handleLinkAdded} 
+              handleLinkDeleted={this.handleLinkDeleted} 
+              layer2units={layer2units} 
+              links={this.state.container.unit2input}
+              variables={this.state.container.inputs.usable}
+              //change to existing layer-unit pairs not all layers and available units
+              //send in the ID2name2D object to list current links
+              //need functions for add, delete links
+
+              ></UnitLinkView>
 
                 
           </div>
@@ -2032,7 +2195,7 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
           <div className="col">
           <div className={hide}>
-        <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange}></ContainerInputManualView>
+        <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange} unit2input={this.state.container.unit2input}></ContainerInputManualView>
         </div>
           </div>
         </div>

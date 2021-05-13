@@ -4,7 +4,7 @@ import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import ReactDOM from 'react-dom';
 import './index.css';
-import {DummyModel, Unit, Layer, Container, GraphContainer} from './script.js'
+import {DummyModel, Unit, Layer, GraphContainer} from './script.js'
 import {UnitView, LayerView, ContainerView, Workspace, ToolView} from './App';
 import reportWebVitals from './reportWebVitals';
 

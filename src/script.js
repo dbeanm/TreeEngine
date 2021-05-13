@@ -73,6 +73,7 @@ export class GraphContainer {
 		this.metadata.dt_rules = {} // functions to run
 		this.model_eval_log = []
 		this.id2name = new ID2Name()
+		this.unit2input = new ID2Name2D()
 	}
 
 	update_graph_els(){
@@ -96,6 +97,7 @@ export class GraphContainer {
 		s['container_type'] = this.container_type
 		s['metadata'] = this.metadata
 		s['graph'] = this.cy.json()['elements']
+		s['unit2input'] = this.unit2input.map
 		//return JSON.stringify(s)
 		return s
 	}
@@ -120,6 +122,7 @@ export class GraphContainer {
 		this.cy.add(config.graph)
 		this.update_graph_validity()
 		this.update_graph_els()
+		this.unit2input = new ID2Name2D(config.unit2input)
 
 	}
 
@@ -444,6 +447,38 @@ export class GraphContainer {
 		return ok
 	}
 
+	link_input_to_unit(variable_name, unit_name, layer_name){
+		//TODO check the variable type matches the output type of the unit
+		//check all of the arguments are valid
+		const l_ok = this.layers.hasOwnProperty(layer_name)
+		let u_ok = false
+		if(l_ok){
+			//if the layer is valid, check it has a unit with this name
+			u_ok = this.layers[layer_name].units.hasOwnProperty(unit_name)
+		}
+		const v_ok = this.inputs.usable.hasOwnProperty(variable_name)
+		const checks_pass = l_ok && u_ok && v_ok
+		if(!checks_pass){
+			console.log(`checks passed: variable ${v_ok}, unit ${u_ok}, layer ${l_ok}`)
+			return false
+		}
+		let ok
+		try {
+			this.unit2input.add(layer_name, unit_name, variable_name)
+			ok = true
+		}
+		catch(err){
+			console.log(err)
+			ok = false
+		}
+		return ok
+	}
+
+	unlink_input(variable_name){
+		let ok = this.unit2input.delete_link(variable_name)
+		return ok
+	}
+
 	update_graph_validity(){
 		let root_nodes = this.cy.nodes().roots()
 		let valid = true
@@ -491,7 +526,7 @@ export class GraphContainer {
 		let result = {}
 		//run the root node
 		let layer_r = this.layers[root_node.id()].run(user_input, scoped_input)
-		user_input = this.update_inputs(user_input, layer_r)
+		user_input = this.update_inputs(user_input, root_node.id(), layer_r)
 		result[root_node.id()] = layer_r
 
 		//begin traversal
@@ -512,7 +547,7 @@ export class GraphContainer {
 			
 			//run the current node
 			let layer_r = this.layers[next_src].run(user_input, scoped_input)
-			user_input = this.update_inputs(user_input, layer_r)
+			user_input = this.update_inputs(user_input, next_src, layer_r)
 			result[next_src] = layer_r
 
 			path_nodes.push(next_src)
@@ -768,9 +803,16 @@ export class GraphContainer {
 
 
 
-	update_inputs(current, updates){
-		let input = Object.assign(current, updates);
-		return input
+	update_inputs(current, layer_name, updates){
+		//check for a link
+		const linked = this.unit2input.get_layer(layer_name)
+		for(const [unit_name, variable_names] of Object.entries(linked)){
+			for(const variable of variable_names){
+				current[variable] = updates[unit_name]
+			}
+		}
+		//let input = Object.assign(current, updates);
+		return current
 	}
 
 	resolve_inputs(){
@@ -1620,4 +1662,129 @@ class ID2Name {
 		delete this.map[key]
 		delete this.reverseMap[value]
 	}
+}
+
+class ID2Name2D {
+	/*
+	class to map from [layer, unit] to Name. Will not allow multiple [layer,unit]s to set a single variable
+	but will allow a single [layer, unit] to set multiple values
+	
+	*/
+    constructor(map = {}) {
+       this.map = map;
+       this.reverseMap = {};
+       this.reverse()
+    }
+
+	add(layer, unit, variable){
+		if(this.reverse.hasOwnProperty(variable)){
+			throw new DuplicateEntryError(`Variable ${variable} is already linked to ${this.reverseMap[variable]}`)
+		}
+		if(!this.map.hasOwnProperty(layer)){
+			this.map[layer] = {}
+		}
+		if(!this.map[layer].hasOwnProperty(unit)){
+			this.map[layer][unit] = [] //don't use a set so it can be serialised easily
+		}
+		if(this.map[layer][unit].indexOf(variable) == -1){
+			this.map[layer][unit].push(variable)
+		}
+		this.reverse()
+	}
+
+	get(layer, unit){
+		if(!this.map.hasOwnProperty(layer)){
+			return []
+		}
+		if(!this.map[layer].hasOwnProperty(unit)){
+			return []
+		}
+		return this.map[layer][unit]
+	}
+
+	get_layer(layer){
+		if(!this.map.hasOwnProperty(layer)){
+			return {}
+		}
+		return this.map[layer]
+	}
+
+	get_variable(variable){
+		//return {layer, unit} if linked, false otherwise
+		if(!this.reverseMap.hasOwnProperty(variable)){
+			return false
+		} else {
+			return this.reverseMap[variable]
+		}
+	}
+	
+	get_variable_str(variable){
+		const loc = this.get_variable(variable)
+		if(loc === false){
+			return ""
+		}
+		return loc.layer + '-' + loc.unit
+	}
+
+	get_linked_variables(){
+		return Object.keys(this.reverseMap)
+	}
+	
+	delete_layer(layer_name){
+		delete this.map[layer_name]
+		this.reverse()
+	}
+
+	delete_unit(layer_name, unit_name){
+		delete this.map[layer_name][unit_name]
+		this.reverse()
+	}
+
+	delete_link(variable){
+		//don't want trying to delete a non-existant link to create issues
+		//so currently always returns true but branches are handled separately
+		//because the delete process will produce errors if there is no link i.e. key not in dict
+		const loc = this.get_variable(variable)
+		if(loc === false){
+			return true
+		}
+		//since we got a location, assume the forward link also exists
+		//should also check that it exists in case of some internal error
+		this.map[loc.layer][loc.unit] = this.map[loc.layer][loc.unit].filter(item => item !== variable)
+		this.reverse()
+		return true
+	}
+
+	rename_layer(old_name, new_name){
+		if(this.map.hasOwnProperty(new_name)){
+			throw new DuplicateEntryError(`Value already exists: ${new_name}`)
+		}
+		this.map[new_name] = this.map[old_name]
+		this.delete_layer(old_name)
+		this.reverse()
+	}
+
+	rename_unit(layer_name, old_name, new_name){
+		if(this.map[layer_name].hasOwnProperty(new_name)){
+			throw new DuplicateEntryError(`Value already exists: ${new_name}`)
+		}
+		this.map[layer_name][new_name] = this.map[layer_name][old_name]
+		this.delete_unit(layer_name, old_name)
+		this.reverse()
+	}
+
+	reverse(){
+		//the reverse direction is stored flat as only 1:1
+		this.reverseMap = {}
+		let link;
+		for(const [layer, units] of Object.entries(this.map)) {
+			for(const [unit, variables] of Object.entries(units)) {
+				link = {layer:layer, unit:unit}
+				for(const variable of variables){
+					this.reverseMap[variable] = link; 
+				}
+			 }
+		 }
+	}
+
 }
