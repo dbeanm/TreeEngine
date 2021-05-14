@@ -153,8 +153,6 @@ export class GraphContainer {
 		delete this.layers[name]
 		delete this.variables[name]
 		this.layer_order = Object.keys(this.layers)
-		//update links
-		this.unit2input.delete_layer(name)
 
 		//update cy
 		let selected = this.cy.getElementById(name)
@@ -168,6 +166,9 @@ export class GraphContainer {
 		this.update_graph_els()
 		this.update_graph_validity()
 		this.resolve_inputs()
+		//update links - must be after inputs resolved so links can be flushed
+		this.unit2input.delete_layer(name, Object.keys(this.inputs.usable))
+
 		return true
 	}
 
@@ -433,9 +434,9 @@ export class GraphContainer {
 			console.log(err)
 			return false
 		}
-		//update links
-		this.unit2input.delete_unit(layer_name, unit_name)
 		this.resolve_inputs()
+		//update links
+		this.unit2input.delete_unit(layer_name, unit_name, Object.keys(this.inputs.usable))
 		return true
 	}
 
@@ -1746,21 +1747,45 @@ class ID2Name2D {
 		return Object.keys(this.reverseMap)
 	}
 	
-	delete_layer(layer_name){
+	delete_layer(layer_name, remaining_variables){
 		delete this.map[layer_name]
 		this.reverse()
+		this.flush(remaining_variables)
 	}
 
-	delete_unit(layer_name, unit_name){
+
+	delete_unit(layer_name, unit_name, remaining_variables){
 		//there has to at least be an object for the layer in the map
 		//then deleting a non-existant unit key is fine if there is no link
 		const layer_exists = this.map.hasOwnProperty(layer_name)
 
 		if(layer_exists){
 			delete this.map[layer_name][unit_name]
+			//if we deleted the only unit, also delete the layer
+			if(Object.keys(this.map[layer_name]).length == 0){
+				console.log("clean up link for now empty layer", layer_name)
+				this.delete_layer(layer_name, remaining_variables)
+			}
 			this.reverse()
 		}
+
+		this.flush(remaining_variables)
 		
+	}
+
+	flush(remaining_variables){
+		//delete links for all variables other than these
+		//triggered when a layer is deleted in the container, since it could delete the target of a link
+		const linked = Object.keys(this.reverseMap)
+		const to_delete = linked.filter(item => remaining_variables.indexOf(item) === -1)
+		console.log("ID2Name2D flush comparing list", remaining_variables,"to internal", linked)
+		console.log("ID2Name2D flushing unused variables", to_delete)
+		for(const v of to_delete){
+			//there is potential for an infinite recursion here because delete_link can call flush
+			//however delete_link should internally set the remaining variables to the current variables
+			//so there will be nothing to delete triggered
+			this.delete_link(v)
+		}
 	}
 
 	delete_link(variable){
@@ -1774,6 +1799,11 @@ class ID2Name2D {
 		//since we got a location, assume the forward link also exists
 		//should also check that it exists in case of some internal error
 		this.map[loc.layer][loc.unit] = this.map[loc.layer][loc.unit].filter(item => item !== variable)
+		//if that was the only link, also delete keys for unit and possibly layer
+		if(this.map[loc.layer][loc.unit].length == 0){
+			console.log("clean up link for now empty unit", loc.unit,"in",loc.layer)
+			this.delete_unit(loc.layer, loc.unit, Object.keys(this.reverseMap))
+		}
 		this.reverse()
 		return true
 	}
@@ -1785,7 +1815,8 @@ class ID2Name2D {
 		}
 		if(this.map.hasOwnProperty(old_name)){
 			this.map[new_name] = this.map[old_name]
-			this.delete_layer(old_name)
+			//in a rename we won't lose any variables so set the list of remaining variables to all variable names
+			this.delete_layer(old_name, Object.keys(this.reverseMap))
 			this.reverse()
 		}
 	}
@@ -1804,7 +1835,8 @@ class ID2Name2D {
 				throw new DuplicateEntryError(`Value already exists: ${new_name}`)
 			}
 			this.map[layer_name][new_name] = this.map[layer_name][old_name]
-			this.delete_unit(layer_name, old_name)
+			//no variables will be deleted in a rename so all current links can be used as list to keep
+			this.delete_unit(layer_name, old_name, Object.keys(this.reverseMap))
 			this.reverse()
 		}
 		
