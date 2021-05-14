@@ -586,7 +586,7 @@ export class UnitLinkView extends React.Component {
     super(props);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.onLayerChange = this.onLayerChange.bind(this);
-    this.state = {layer:null}
+    this.state = {layer:undefined}
   }
 
   handleSubmit(event) {
