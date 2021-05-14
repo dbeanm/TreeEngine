@@ -315,11 +315,11 @@ export class GraphContainerNodeControls extends React.Component {
         </div>
 
         <div className="form-group row">
-        <label htmlFor='adder-layer-select' className="col-sm-2 col-form-label">
+        <label htmlFor='adder-compute-select' className="col-sm-2 col-form-label">
         To Compute Node
         </label>
         <div className="col-sm-10">
-        <select id='adder-layer-select' className="custom-select" name="layer">
+        <select id='adder-compute-select' className="custom-select" name="layer">
           {layeropts}
         </select> 
         </div>
@@ -360,22 +360,22 @@ export class GraphContainerEdgeControls extends React.Component {
     return (
       <form onSubmit={this.handleSubmit}>
         <div className="form-group row">
-        <label htmlFor='adder-unit-select' className="col-sm-2 col-form-label">
+        <label htmlFor='adder-source-select' className="col-sm-2 col-form-label">
         Source
         </label>
         <div className="col-sm-10">
-        <select id='adder-unit-select' className="custom-select" onChange={this.handleChange} name="layer1">
+        <select id='adder-source-select' className="custom-select" onChange={this.handleChange} name="layer1">
           {layeropts}
         </select>
         </div>
         </div>
 
         <div className="form-group row">
-        <label htmlFor='adder-layer-select' className="col-sm-2 col-form-label">
+        <label htmlFor='adder-target-select' className="col-sm-2 col-form-label">
         Target
         </label>
         <div className="col-sm-10">
-        <select id='adder-layer-select' className="custom-select" onChange={this.handleChange} name="layer2">
+        <select id='adder-target-select' className="custom-select" onChange={this.handleChange} name="layer2">
           {layeropts}
         </select> 
         </div>
@@ -639,33 +639,33 @@ export class UnitLinkView extends React.Component {
       <div>
       <form onSubmit={this.handleSubmit}>
         <div className="form-group row">
-        <label htmlFor='adder-unit-select' className="col-sm-2 col-form-label">
+        <label htmlFor='link-var-select' className="col-sm-2 col-form-label">
         Link variable
         </label>
         <div className="col-sm-10">
-        <select id='adder-unit-select' className="custom-select" name="variable">
+        <select id='link-var-select' className="custom-select" name="variable">
           {variableopts}
         </select>
         </div>
         </div>
 
         <div className="form-group row">
-        <label htmlFor='adder-layer-select' className="col-sm-2 col-form-label">
+        <label htmlFor='link-layer-select' className="col-sm-2 col-form-label">
         To layer:
         </label>
         <div className="col-sm-10">
-        <select id='adder-layer-select' className="custom-select" onChange={this.onLayerChange} name="layer" value={this.state.layer} >
+        <select id='link-layer-select' className="custom-select" onChange={this.onLayerChange} name="layer" value={this.state.layer} >
           {layeropts}
         </select> 
         </div>
         </div>
 
         <div className="form-group row">
-        <label htmlFor='adder-layer-select' className="col-sm-2 col-form-label">
+        <label htmlFor='link-unit-select' className="col-sm-2 col-form-label">
         Unit:
         </label>
         <div className="col-sm-10">
-        <select id='adder-layer-select' className="custom-select" onChange={this.handleChange} name="unit">
+        <select id='link-unit-select' className="custom-select" onChange={this.handleChange} name="unit">
           {unitopts}
         </select> 
         </div>
