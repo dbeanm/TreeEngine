@@ -486,7 +486,7 @@ export class GraphContainerConditionControls extends React.Component {
         id={id_unknown}
         type="radio"
         name='cond-value'
-        value="Unknown"
+        value="" //an empty string is unknown for a bool var
         className="form-check-input"
       />
       <label htmlFor={id_unknown} className="form-check-label">
@@ -1110,8 +1110,8 @@ export class ContainerInputManualView extends React.Component {
           id={id_unknown}
           type="radio"
           name={name}
-          value="Unknown"
-          checked={value === "Unknown"}
+          value=""
+          checked={value === ""}
           className="form-check-input"
           onChange={this.handleChange} 
         />
@@ -1196,99 +1196,99 @@ class FileInput extends React.Component {
   }
 }
 
-export class TypedInputView extends React.Component {
-  constructor(props) {
-    super(props);
-    this.handleChange = this.handleChange.bind(this)
-  }
+// export class TypedInputView extends React.Component {
+//   constructor(props) {
+//     super(props);
+//     this.handleChange = this.handleChange.bind(this)
+//   }
 
-  handleChange(event) {    
-    const target = event.target;
-    let value
-    console.log("TIV", target.type)
-    console.log("TIV value", target.value)
+//   handleChange(event) {    
+//     const target = event.target;
+//     let value
+//     console.log("TIV", target.type)
+//     console.log("TIV value", target.value)
  
-    if(target.type === 'radio'){
-      value = target.value
-    } else if(target.type === 'number') {
-      value = parseFloat(target.value)
-    } else {
-      value = target.value
-    }
+//     if(target.type === 'radio'){
+//       value = target.value
+//     } else if(target.type === 'number') {
+//       value = parseFloat(target.value)
+//     } else {
+//       value = target.value
+//     }
 
-    const name = target.name;
-    //console.log('handlechange', name, value)
-    this.props.onChange(value);
-  }
+//     const name = target.name;
+//     //console.log('handlechange', name, value)
+//     this.props.onChange(value);
+//   }
 
-  render() {
-    const type = this.props.type
-    const name = this.props.name
-    const value = this.props.value
-    const id_true = `${name}_true`
-    const id_false = `${name}_false`
-    const id_unknown = `${name}_unknown`
-    let in_el
+//   render() {
+//     const type = this.props.type
+//     const name = this.props.name
+//     const value = this.props.value
+//     const id_true = `${name}_true`
+//     const id_false = `${name}_false`
+//     const id_unknown = `${name}_unknown`
+//     let in_el
 
-    if(type == "num"){
-      in_el = <input type="number" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
-  } else if(type == 'bool'){
-      in_el = (<div>
-        <div className="form-check">
-        <input
-          id={id_true}
-          type="radio"
-          name={name}
-          value="True"
-          checked={value === "True"}
-          className="form-check-input"
-          onChange={this.handleChange} 
-        />
-        <label htmlFor={id_true} className="form-check-label">
-        True
-      </label>
-      </div>
+//     if(type == "num"){
+//       in_el = <input type="number" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
+//   } else if(type == 'bool'){
+//       in_el = (<div>
+//         <div className="form-check">
+//         <input
+//           id={id_true}
+//           type="radio"
+//           name={name}
+//           value="True"
+//           checked={value === "True"}
+//           className="form-check-input"
+//           onChange={this.handleChange} 
+//         />
+//         <label htmlFor={id_true} className="form-check-label">
+//         True
+//       </label>
+//       </div>
       
-      <div className="form-check">
-      <input
-        id={id_false}
-        type="radio"
-        name={name}
-        value="False"
-        checked={value === "False"}
-        className="form-check-input"
-        onChange={this.handleChange} 
-      />
-      <label htmlFor={id_false} className="form-check-label">
-      False
-    </label>
-    </div>
+//       <div className="form-check">
+//       <input
+//         id={id_false}
+//         type="radio"
+//         name={name}
+//         value="False"
+//         checked={value === "False"}
+//         className="form-check-input"
+//         onChange={this.handleChange} 
+//       />
+//       <label htmlFor={id_false} className="form-check-label">
+//       False
+//     </label>
+//     </div>
     
-    <div className="form-check">
-    <input
-      id={id_unknown}
-      type="radio"
-      name={name}
-      value="Unknown"
-      checked={value === "Unknown"}
-      className="form-check-input"
-      onChange={this.handleChange} 
-    />
-    <label htmlFor={id_unknown} className="form-check-label">
-    Unknown
-  </label>
-  </div>
-  </div>)
-  } else if(type=='str'){
-      in_el = <input type="text" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
-    } else {
-      in_el = <input type="text" name={name} className="form-check-input" disabled='disabled'/>
-    }
-    return (
-      in_el
-    )
-  }
-}
+//     <div className="form-check">
+//     <input
+//       id={id_unknown}
+//       type="radio"
+//       name={name}
+//       value="Unknown"
+//       checked={value === "Unknown"}
+//       className="form-check-input"
+//       onChange={this.handleChange} 
+//     />
+//     <label htmlFor={id_unknown} className="form-check-label">
+//     Unknown
+//   </label>
+//   </div>
+//   </div>)
+//   } else if(type=='str'){
+//       in_el = <input type="text" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
+//     } else {
+//       in_el = <input type="text" name={name} className="form-check-input" disabled='disabled'/>
+//     }
+//     return (
+//       in_el
+//     )
+//   }
+// }
 
 export class MultiSelect extends React.Component {
   constructor(props){
@@ -1733,7 +1733,7 @@ export class Workspace extends React.Component {
   }
 
   handleAPIkey(){
-    const api_key = '3b68cda1c23c4cb001e1768c7dcb3b2da7f4d2167e1858f56ff143b77c9f2cda' // document.getElementById('esyn_api_key').value
+    const api_key = document.getElementById('esyn_api_key').value
 
     var details =  { action: 'listProjectsFromToken',
                     token: api_key

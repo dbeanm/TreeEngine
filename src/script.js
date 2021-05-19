@@ -366,7 +366,9 @@ export class GraphContainer {
 		}
 	}
 
-	delete_conditions_from_edge(label_id, selected){
+	delete_conditions_from_edge(label_id, selected, refresh_graph=true){
+		//by default this will automatically trigger this.update_graph_els but can be disabled e.g. for use in a loop
+		//in that case update_graph_els should be manually used afterwards
 		console.log("container deleting conditions")
 		let keep = []
 		for(const el of this.metadata.conditions[label_id]){
@@ -416,6 +418,10 @@ export class GraphContainer {
 		// 	}
 		// })
 		this.metadata.conditions[label_id] = keep
+		this.update_condition_label(label_id)
+		if(refresh_graph){
+			this.update_graph_els()
+		}
 	}
 
 
@@ -871,6 +877,23 @@ export class GraphContainer {
 				this.create_variable_meta(key, '')
 			}
 			
+		}
+
+		//now check that none of the metadata.conditions refers to a variable not in the refreshed
+		//list of usable variables
+		let to_delete
+		let refresh_labels = false
+		for(const [label_id, conds] of Object.entries(this.metadata.conditions)){
+			to_delete = conds.filter(c => !this.inputs.usable.hasOwnProperty(c.prop)).map(x => x.cond_str)
+			if(to_delete.length != 0){
+				console.log("removed condition using deleted variable in label", label_id)
+				this.delete_conditions_from_edge(label_id, to_delete, false)
+				refresh_labels = true
+			}
+		}
+		if(refresh_labels){
+			//if we changed any labels, update the graph once at the end
+			this.update_graph_els()
 		}
 	}
 }
