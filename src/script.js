@@ -197,7 +197,8 @@ export class GraphContainer {
 			incomers.forEach((element) => {
 				edge = {
 					group: 'edges',
-					data: {source: element.source().id(), target: new_name}
+					data: {source: element.source().id(), target: new_name},
+					classes: 'directed'
 				}
 				new_edges.push(edge)
 			});
@@ -222,9 +223,9 @@ export class GraphContainer {
 			//delete the old node
 			this.delete_layer(old_name)
 			// console.log("els are now")
-			// const els_now = this.cy.json()['elements']
+			const els_now = this.cy.json()['elements']
 			// console.log(els_now)
-			// console.log( CytoscapeComponent.normalizeElements(els_now))
+			console.log( CytoscapeComponent.normalizeElements(els_now))
 			return true
 		}
 	}
