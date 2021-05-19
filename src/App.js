@@ -640,7 +640,7 @@ export class UnitLinkView extends React.Component {
       <form onSubmit={this.handleSubmit}>
         <div className="form-group row">
         <label htmlFor='link-var-select' className="col-sm-2 col-form-label">
-        Link variable
+        Link value of variable
         </label>
         <div className="col-sm-10">
         <select id='link-var-select' className="custom-select" name="variable">
@@ -651,7 +651,7 @@ export class UnitLinkView extends React.Component {
 
         <div className="form-group row">
         <label htmlFor='link-layer-select' className="col-sm-2 col-form-label">
-        To layer:
+        To result from node:
         </label>
         <div className="col-sm-10">
         <select id='link-layer-select' className="custom-select" onChange={this.onLayerChange} name="layer" value={this.state.layer} >
