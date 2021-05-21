@@ -115,6 +115,7 @@ export class UnitAvailableView extends React.Component {
       </div>
       <div className="card-body">
       <p>Output type: {this.props.unit.output_type}</p>
+      <p>Calculator mode: {this.props.unit.model.metadata.calculator_mode}</p>
       <p>Unit Varaibles:</p>
         <ul>
           {listItems}

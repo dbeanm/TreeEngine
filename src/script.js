@@ -1062,6 +1062,7 @@ export class Unit {
 		this.model = model
 		this.variables = this.model.variables //must be unique, i.e. no separate this.inputs required
 		this.output_type = this.model.output_type //default to the type of the model, can be edited later
+		this.model_calculator_mode = this.model.metadata.calculator_mode
 		// some sort of this.load_graph method should run now
 	}
 
@@ -1253,9 +1254,15 @@ export class EsynDecisionTree extends Model{
 			this.output_type = this.metadata.output_type
 		}
 
+		//calculator mode
+		//old model format did not have this so set a default if absent
+		if(!this.metadata.hasOwnProperty('calculator_mode')){
+			this.metadata.calculator_mode = "missing"
+		} 
+
 	}
 
-	pre_run_checks(input, use_calculators = true, enforce_required = true) {
+	pre_run_checks(input, enforce_required = true) {
 		let can_run = true;
 		this.model_eval_log = []
 
@@ -1264,13 +1271,23 @@ export class EsynDecisionTree extends Model{
 		this.model_eval_log = this.model_eval_log.concat(rules.log)
 
 
-		//input to the model is user data with calculators applied
-		let model_input
-		if(use_calculators == true){
-			model_input = rules.updated_input
-		} else {
-			model_input = input
-		}
+		//input to the model is user data with calculators applied according to calculator mode
+		let all_required = []
+		let all_missing_input = []
+		let all_variables = Object.keys(this.metadata.variables)
+		let val, type
+		all_variables.forEach(function(el){
+		if( this.metadata.variables[el].required == true ){
+				all_required.push(el)
+			}
+
+			val = input[el]
+			type = this.metadata.variables[el].value_type
+			if ( type == 'num' && isNaN(val)  ||  type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
+				all_missing_input.push(el)
+			}
+		}, this)
+		let model_input = this.merge_with_calculators(input, rules.updated_input,  all_required, all_missing_input, this.metadata.calculator_mode)
 
 		//user-defined checks
 		//required variables must be set
@@ -1279,9 +1296,9 @@ export class EsynDecisionTree extends Model{
 		    let all_vars = Object.keys(model_input)
 		    all_vars.forEach(function(el){
 				if(this.metadata.variables.hasOwnProperty(el) && this.metadata.variables[el].required == true ){
-		        	let val = model_input[el]
-		        	let type = this.metadata.variables[el].value_type
-			        if ( type == 'num' && isNaN(val) || type == 'bool' && val === '' || type == 'str' && val == ''){
+		        	val = model_input[el]
+		        	type = this.metadata.variables[el].value_type
+			        if ( type == 'num' && isNaN(val) || type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
 						missing.push(el)
 						this.model_eval_log.push("Missing required input: " + el)
 			        }
@@ -1309,8 +1326,37 @@ export class EsynDecisionTree extends Model{
 		return {'can_run': can_run, 'model_input': model_input, 'root': root_nodes[0]}
 	}
 
+	merge_with_calculators(user_input, calculated, required, missing, mode){
+		//provides updated input according to the specified mode
+		var result
+		if(mode == 'always'){
+			result = Object.assign(user_input, calculated)
+		} else if(mode == 'missing'){
+			missing.forEach(function(el){
+				if(calculated.hasOwnProperty(el)){
+					user_input[el] = calculated[el]
+				}
+			})
+			result = user_input
+		} else if(mode == 'required'){
+			//replace required variables IF they are missing in the input
+			missing.forEach(function(el){
+				if(required.indexOf(el) != -1 && calculated.hasOwnProperty(el)){
+					user_input[el] = calculated[el]
+				}
+			})
+			result = user_input
+		} else if(mode == 'off'){
+			result = user_input
+		} else {
+			console.log("calculator mode", mode,"not recognised, not changing input")
+			result = user_input
+		}
+		return result
+	}
+
 	run(input, missing_action = 'highlight', use_calculators = true, enforce_required = true){
-		let checks = this.pre_run_checks(input, use_calculators, enforce_required)
+		let checks = this.pre_run_checks(input, enforce_required)
 		console.log("pre run checks", checks)
 		let result = new ModelState()
 		let model_input = checks.model_input;
