@@ -955,6 +955,215 @@ export class ContainerView extends React.Component {
   }
 }
 
+export class RuleListRow extends React.Component {
+  constructor(props) {
+    super(props);
+
+  }
+
+  render() {
+    let then
+    if(this.props.rule['then'].hasOwnProperty('str')){
+        then = this.props.rule['then']['set_variable'] + " = " + this.props.rule['then']['str']
+    } else{
+        then = "Input not valid"
+    }
+    return (
+      <tr key={this.props.i}>
+        <td>{this.props.name}</td>
+        <td>{this.props.rule.if_str}</td>
+        <td>{then}</td>
+        <td>
+          <button className="btn btn-danger btn-sm" onClick={() => this.props.handleDelete(this.props.name)}>Delete</button>
+          </td>
+        </tr>
+    );
+  }
+}
+
+export class RuleList extends React.Component {
+  constructor(props){
+    super(props);
+  }
+
+  renderTableHeader() {
+    let header = ["Rule", "Condition", "Output", "Actions"]
+    return header.map((key, index) => {
+       return <th key={index}>{key}</th>
+    })
+ }
+
+ renderTableData() {
+   let listItems = []
+   let i = 0
+   //for a header row listItems.push(<tr key={i}><td colSpan={3}><b>{pg}</b></td></tr>); i++
+    for(const [rule_name, rule] of Object.entries(this.props.rules)){
+      listItems.push(<RuleListRow key={i} name={rule_name} rule={rule} handleDelete={this.props.handleDelete}></RuleListRow>)
+      i += 1
+    }
+   return ( listItems )
+  }
+
+
+  render() {
+
+    return (
+      <div>
+        <h4>Current Calculators and Rules</h4>
+      <table id='re-active-rule-list' className="model-input-table table">
+        <tbody>
+          <tr>{this.renderTableHeader()}</tr>
+          {this.renderTableData()}
+        </tbody>
+      </table>
+      </div>
+    );
+  }
+}
+
+export class RuleEditor extends React.Component {
+  constructor(props){
+    super(props);
+    this.handleSubmit = this.handleSubmit.bind(this)
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    let els = event.target.elements
+    const rule_name = els.rule_name.value
+    const if_str = els.rule_string.value
+    const then_str = "not-valid"
+    const then_rule = ""
+    const set_val_of = ""
+
+    const ok = this.props.handleAdded(rule_name, if_str, then_str, set_val_of, then_rule)
+    if(ok){
+      event.target.reset()
+    }
+  }
+
+  render() {
+
+
+    return (
+      <div>
+        <h4>Add Rule</h4>
+
+        <br />
+        <form onSubmit={this.handleSubmit}>
+
+        <div className="form-group row">
+        <label htmlFor='re-rule-name' className="col-sm-2 col-form-label">
+        Rule Name
+        </label>
+        <div className="col-sm-10">
+        <input type="text" name="rule_name" id="re-rule-name" className="form-control" placeholder="Text"></input>
+        </div>
+        </div>
+
+
+        <div className="form-group row">
+        <label htmlFor='re-rule-string' className="col-sm-2 col-form-label">
+        Do not run IF:
+        </label>
+        <div className="col-sm-10">
+        <input type="text" name="rule_string" id="re-rule-string" className="form-control" placeholder="Formula"></input>
+        </div>
+        </div>
+
+        <input type="submit" value="Create Rule" className="btn btn-primary btn-block"/>
+
+      </form>
+      </div>
+
+    )
+  }
+}
+
+export class CalculatorEditor extends React.Component {
+  constructor(props){
+    super(props);
+    this.handleSubmit = this.handleSubmit.bind(this)
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    let els = event.target.elements
+    const rule_name = els.rule_name.value
+    const if_str = els.rule_string.value
+    const then_str = "set-val"
+    const then_rule = els.rule_value.value
+    const set_val_of = els.set_val_of.value
+
+
+    const ok = this.props.handleAdded(rule_name, if_str, then_str, set_val_of, then_rule)
+    if(ok){
+      event.target.reset()
+    }
+  }
+
+  render() {
+
+
+    const varopts = this.props.variables.map((x) => <option key={x} value={x}>{x}</option>)
+
+    return (
+      <div>
+        <h4>Add Calculator</h4>
+
+        <br />
+        <form onSubmit={this.handleSubmit}>
+
+        <div className="form-group row">
+        <label htmlFor='ce-rule-name' className="col-sm-2 col-form-label">
+        Calculator Name
+        </label>
+        <div className="col-sm-10">
+        <input type="text" name="rule_name" id="ce-rule-name" className="form-control" placeholder="Text"></input>
+        </div>
+        </div>
+
+
+        <div className="form-group row">
+        <label htmlFor='ce-rule-string' className="col-sm-2 col-form-label">
+        IF
+        </label>
+        <div className="col-sm-10">
+        <input type="text" name="rule_string" id="ce-rule-string" className="form-control" placeholder="Formula"></input>
+        </div>
+        </div>
+
+
+        <div className="form-group row">
+        <label htmlFor='ce-set-val-of' className="col-sm-2 col-form-label">
+        Then set value of
+        </label>
+        <div className="col-sm-10">
+        <select id='ce-set-val-of' className="custom-select" name="set_val_of">
+          {varopts}
+        </select>
+        </div>
+        </div>
+
+
+        <div className="form-group row">
+        <label htmlFor='ce-rule-value' className="col-sm-2 col-form-label">
+        Set value to
+        </label>
+        <div className="col-sm-10">
+        <input type="text" name="rule_value" id="ce-rule-value" className="form-control" placeholder="Formula"></input>
+        </div>
+        </div>
+
+        <input type="submit" value="Create Calculator" className="btn btn-primary btn-block"/>
+
+      </form>
+      </div>
+
+    )
+  }
+}
+
 export class ResultsView extends React.Component {
   constructor(props) {
     super(props);
@@ -1410,6 +1619,8 @@ export class Workspace extends React.Component {
     this.handleUnitDeleteInLayer = this.handleUnitDeleteInLayer.bind(this);
     this.handleLinkAdded = this.handleLinkAdded.bind(this);
     this.handleLinkDeleted = this.handleLinkDeleted.bind(this);
+    this.addCalculatorToContiner = this.addCalculatorToContiner.bind(this);
+    this.deleteCalculatorFromContainer = this.deleteCalculatorFromContainer.bind(this);
   }
   static defaultProps = {
     container: new GraphContainer()
@@ -1720,6 +1931,42 @@ export class Workspace extends React.Component {
     
   }
 
+  addCalculatorToContiner(rule_name, if_str, then_str, set_val_of, then_rule = ""){
+    console.log("workspace adding rule with name", rule_name)
+    let c = this.state.container
+    let rule = {}
+    rule['if_str'] = if_str
+    rule['then_str'] = then_str
+    rule['name'] = rule_name
+    rule['then'] = {}
+
+    if(rule['then_str'] == 'set-val'){
+        rule['then']['str'] = then_rule
+        rule['then']['set_variable'] = set_val_of
+    }
+
+    const res = c.add_rule(rule)
+    if(res){
+      this.setState({container: c})
+    } else {
+      alert("there was an error adding the rule")
+    }
+    return res
+  }
+
+  deleteCalculatorFromContainer(rule_name){
+    console.log("workspace deleting rule with name", rule_name)
+    let c = this.state.container
+
+    const res = c.delete_rule(rule_name)
+    if(res){
+      this.setState({container: c})
+    } else {
+      alert("there was an error deleting the rule")
+    }
+    return res
+  }
+
   get_project_groups(esyn_projects){
     let project_grps = {}
     for(const project of esyn_projects){
@@ -1955,6 +2202,7 @@ export class Workspace extends React.Component {
           <a className="nav-item nav-link" id="nav-workspace-detail-tab" data-toggle="tab" href="#nav-workspace-detail" role="tab" aria-controls="nav-workspace-detail" aria-selected="false">Model Detail</a>
             <a className="nav-item nav-link" id="nav-units-tab" data-toggle="tab" href="#nav-units" role="tab" aria-controls="nav-units" aria-selected="false">Available Units <span className="badge badge-light">{n_available_units}</span></a>
             <a className="nav-item nav-link" id="nav-user-input-tab" data-toggle="tab" href="#nav-user-input" role="tab" aria-controls="nav-user-input" aria-selected="false">Model Input {input_badge}</a>
+            <a className="nav-item nav-link" id="nav-rules-tab" data-toggle="tab" href="#nav-rules" role="tab" aria-controls="nav-rules" aria-selected="false">Calculators and Rules</a>
             <a className="nav-item nav-link" id="nav-save-workspace-tab" data-toggle="tab" href="#nav-save-workspace" role="tab" aria-controls="nav-save-workspace" aria-selected="false">Save/Load</a>
             <a className="nav-item nav-link" id="nav-testing-tab" data-toggle="tab" href="#nav-testing" role="tab" aria-controls="nav-testing" aria-selected="false">Testing</a>
           </div>
@@ -1996,6 +2244,43 @@ export class Workspace extends React.Component {
                 {listItems}
                 </div>
             </div>
+
+          </div>
+
+          <div className="tab-pane fade" id="nav-rules" role="tabpanel" aria-labelledby="nav-rules-tab">
+          <div className="row mt-1">
+          <div className="col">
+          <div>
+            <h4>Edit calculators and rules</h4>
+
+            <p>Calculators infer missing values based on user input. Rules determine when the model is valid.</p>
+
+            <p>You can refer to variables in your model by including the name in single quotes e.g.</p>
+            <pre>IF: 'var_a' &gt; 5 and ('x' &lt; 10 or 'y' &gt; 15)</pre>
+            
+            </div>
+          
+          </div>
+          </div>
+
+          <div className="row mt-3">
+          <div className="col">
+          <RuleEditor handleAdded={this.addCalculatorToContiner}></RuleEditor>
+          </div>
+          </div>
+
+          <div className="row mt-3">
+          <div className="col">
+          <CalculatorEditor variables={Object.keys(this.state.container.inputs.usable)} handleAdded={this.addCalculatorToContiner}></CalculatorEditor>
+          </div>
+          </div>
+
+          <div className="row mt-3">
+          <div className="col">
+          <RuleList rules={this.state.container.metadata.dt_rules} handleDelete={this.deleteCalculatorFromContainer}></RuleList>
+          </div>
+          </div>
+
 
           </div>
 

@@ -71,6 +71,7 @@ export class GraphContainer {
 		this.metadata.dt_ui_groups = {} // group name -> [variables]
 		this.metadata.dt_ui_groups[''] = [] //empty string is always the group when a new variable is created
 		this.metadata.dt_rules = {} // functions to run
+		this.metadata.calculator_mode = 'missing'
 		this.model_eval_log = []
 		this.id2name = new ID2Name()
 		this.unit2input = new ID2Name2D()
@@ -123,6 +124,17 @@ export class GraphContainer {
 		this.update_graph_validity()
 		this.update_graph_els()
 		this.unit2input = new ID2Name2D(config.unit2input)
+
+		for(const r of Object.keys(this.metadata.dt_rules)){
+			//console.log("adding rule", r, this.metadata.dt_rules[r])
+			this.add_rule(this.metadata.dt_rules[r])
+		}
+
+		//calculator mode
+		//old model format did not have this so set a default if absent
+		if(!this.metadata.hasOwnProperty('calculator_mode')){
+			this.metadata.calculator_mode = "missing"
+		} 
 
 	}
 
@@ -524,20 +536,31 @@ export class GraphContainer {
 			throw new ModelExecutionError(`The model structure is not valid`)
 		}
 		console.log("running model")
-		const root = this.cy.getElementById(this.graph_state.root)
-		const result = this.traverse_from(root, input, scoped_input)
-		//check for nodes that did not run, set state accordingly
-		//the nodes that run are ALL in result.path_nodes and ONLY in result.path_nodes
-		const seen = new Set(result.path_nodes)
+		let checks = this.pre_run_checks(input, false) //currently aren't required variables here
+		console.log("pre run checks", checks)
+		let model_input = checks.model_input;
+		let seen, result
+		if(checks.can_run){
+			const root = this.cy.getElementById(this.graph_state.root)
+			result = this.traverse_from(root, model_input, scoped_input)
+			//check for nodes that did not run, set state accordingly
+			//the nodes that run are ALL in result.path_nodes and ONLY in result.path_nodes
+			seen = new Set(result.path_nodes)
+			this.state = result.updated_input
+		} else {
+			seen = new Set()
+			this.state = model_input
+			result = {'result': 'did not run'}
+		}
+		
 		const all_layers = Object.keys(this.layers)
 		let difference = new Set(
 			all_layers.filter(x => !seen.has(x)));
 		for(const l of difference){
 			this.layers[l].reset_state()
 		}
-		this.state = result.updated_input
-		console.log("GraphContainer result", result)
 		
+		console.log("GraphContainer result", result)
 		
 		return result.result
 	}
@@ -729,6 +752,99 @@ export class GraphContainer {
 	    return ['FALSE', 'False', 'false']
 	}
 
+	pre_run_checks(input, enforce_required = true) {
+		let can_run = true;
+		this.model_eval_log = []
+
+		//apply rules and calculators
+		let rules = this.run_rules(input) // updated user input is in rules.updated_input
+		this.model_eval_log = this.model_eval_log.concat(rules.log)
+
+
+		//input to the model is user data with calculators applied according to calculator mode
+		let all_required = []
+		let all_missing_input = []
+		let all_variables = Object.keys(this.metadata.variables)
+		let val, type
+		all_variables.forEach(function(el){
+		if( this.metadata.variables[el].required == true ){
+				all_required.push(el)
+			}
+
+			val = input[el]
+			type = this.metadata.variables[el].value_type
+			if ( type == 'num' && isNaN(val)  ||  type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
+				all_missing_input.push(el)
+			}
+		}, this)
+		let model_input = this.merge_with_calculators(input, rules.updated_input,  all_required, all_missing_input, this.metadata.calculator_mode)
+
+		//user-defined checks
+		//required variables must be set
+		let missing = []
+		if(enforce_required == true){
+		    let all_vars = Object.keys(model_input)
+		    all_vars.forEach(function(el){
+				if(this.metadata.variables.hasOwnProperty(el) && this.metadata.variables[el].required == true ){
+		        	val = model_input[el]
+		        	type = this.metadata.variables[el].value_type
+			        if ( type == 'num' && isNaN(val) || type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
+						missing.push(el)
+						this.model_eval_log.push("Missing required input: " + el)
+			        }
+				}
+		    }, this)
+		}
+
+		//stop if input not valid
+		//if "required" variables are not being enforced or if none are missing, missing.length==0
+		if ( missing.length != 0 || !rules.can_run ) {
+	    	this.model_eval_log.push('Stopped: model input not valid')
+	    	can_run = false
+		}
+
+
+		//checks on structure of the graph
+		let root_nodes = this.cy.nodes().roots()
+		if(root_nodes.length == 0){
+			can_run = false;
+		}
+		if(root_nodes.length > 1){
+			can_run = false;
+		}
+
+		return {'can_run': can_run, 'model_input': model_input, 'root': root_nodes[0]}
+	}
+
+	merge_with_calculators(user_input, calculated, required, missing, mode){
+		//provides updated input according to the specified mode
+		var result
+		if(mode == 'always'){
+			result = Object.assign(user_input, calculated)
+		} else if(mode == 'missing'){
+			missing.forEach(function(el){
+				if(calculated.hasOwnProperty(el)){
+					user_input[el] = calculated[el]
+				}
+			})
+			result = user_input
+		} else if(mode == 'required'){
+			//replace required variables IF they are missing in the input
+			missing.forEach(function(el){
+				if(required.indexOf(el) != -1 && calculated.hasOwnProperty(el)){
+					user_input[el] = calculated[el]
+				}
+			})
+			result = user_input
+		} else if(mode == 'off'){
+			result = user_input
+		} else {
+			console.log("calculator mode", mode,"not recognised, not changing input")
+			result = user_input
+		}
+		return result
+	}
+
 	run_rules(user_input){
 	    let then_action
 	    let log = []
@@ -740,8 +856,10 @@ export class GraphContainer {
 	    //now run not-valid rules using updated input
 	    //if any rules run, set can_run_model to false
 	    let not_valid_rules_state = {}
+		let do_then
 	    rules.not_valid_rules.forEach(function(el){
-	        let do_then = this.metadata.dt_rules[el].if(calculated)
+	        do_then = this.metadata.dt_rules[el].if(calculated)
+			console.log("result for rule",el,"is",do_then)
 	        if(do_then == 1){
 	            can_run_model = false
 	            not_valid_rules_state[el] = true
@@ -793,6 +911,7 @@ export class GraphContainer {
 	            console.log('running set-val rule', el)
 	            r = this.metadata.dt_rules[el]
 	            calculated[r.then.set_variable] = r.then.fn(user_input)
+				console.log("new value",calculated[r.then.set_variable])
 	            //should check here that the function worked
 
 	        } else {
@@ -803,19 +922,41 @@ export class GraphContainer {
 	}
 
 	add_rule(rule){
-	    rule['if'] = compileExpression(rule['if_str']);
+		let can_add = true
+		try {
+			rule['if'] = compileExpression(rule['if_str']);
+		} catch (error) {
+			can_add = false
+		}
+	    
 	    // handle THEN
 	    if(rule['then_str'] == 'set-val'){
-
-	        rule['then']['fn'] = compileExpression(rule['then']['str']);
+			try {
+				rule['then']['fn'] = compileExpression(rule['then']['str']);
+			} catch (error) {
+				can_add = false
+			}
+	        
 	    }
 	    if(rule['then_str'] == 'not-valid') {
 	        rule['then']['fn'] = this.rule_input_invalid
 	    }
 	    //update metadata
-	    this.metadata.dt_rules[rule['name']] = rule
-	    console.log('rule created')
+		if(can_add){
+			this.metadata.dt_rules[rule['name']] = rule
+	    	console.log('rule created')
+		}
+		return can_add
 	}
+
+	delete_rule(rule_name){
+		if(this.metadata.dt_rules.hasOwnProperty(rule_name)){
+			delete this.metadata.dt_rules[rule_name]
+			return true
+		}
+		return false
+	}
+
 
 	rule_input_invalid(){
 	    return true;
@@ -1679,6 +1820,8 @@ export class DummyModel extends Model{
 		//normally the variables would be inferred from the graph 
 		//for testing just set them in constructor since there is no graph
 		this.variables = this.configure_variables(num_variables, bool_variables)
+		this.metadata = {}
+		this.metadata.calculator_mode = "missing"
 	}
 
 	run(input){
