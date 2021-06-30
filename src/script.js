@@ -757,11 +757,12 @@ export class GraphContainer {
 		this.model_eval_log = []
 
 		//apply rules and calculators
-		let rules = this.run_rules(input) // updated user input is in rules.updated_input
-		this.model_eval_log = this.model_eval_log.concat(rules.log)
-
+		let rules = this.get_rules_by_type()
+		console.log('rules are', rules)
 
 		//input to the model is user data with calculators applied according to calculator mode
+
+		//detect missing variables
 		let all_required = []
 		let all_missing_input = []
 		let all_variables = Object.keys(this.metadata.variables)
@@ -777,7 +778,15 @@ export class GraphContainer {
 				all_missing_input.push(el)
 			}
 		}, this)
-		let model_input = this.merge_with_calculators(input, rules.updated_input,  all_required, all_missing_input, this.metadata.calculator_mode)
+
+		//now run calculators
+		let calculated = this.run_calculators(rules.set_val_rules, input)
+
+		let model_input = this.merge_with_calculators(input, calculated,  all_required, all_missing_input, this.metadata.calculator_mode)
+
+		//now apply rules to updated input
+		let rules_out = this.run_rules(rules.not_valid_rules, model_input)
+		this.model_eval_log = this.model_eval_log.concat(rules_out.log)
 
 		//user-defined checks
 		//required variables must be set
@@ -798,7 +807,7 @@ export class GraphContainer {
 
 		//stop if input not valid
 		//if "required" variables are not being enforced or if none are missing, missing.length==0
-		if ( missing.length != 0 || !rules.can_run ) {
+		if ( missing.length != 0 || !rules_out.can_run ) {
 	    	this.model_eval_log.push('Stopped: model input not valid')
 	    	can_run = false
 		}
@@ -813,7 +822,7 @@ export class GraphContainer {
 			can_run = false;
 		}
 
-		return {'can_run': can_run, 'model_input': model_input, 'root': root_nodes[0]}
+		return {'can_run': can_run, 'model_input': model_input, 'root': root_nodes[0], 'missing': missing}
 	}
 
 	merge_with_calculators(user_input, calculated, required, missing, mode){
@@ -845,20 +854,18 @@ export class GraphContainer {
 		return result
 	}
 
-	run_rules(user_input){
+	run_rules(rules, user_input){
 	    let then_action
 	    let log = []
 	    let can_run_model = true
-
-	    let rules = this.get_rules_by_type()
-	    let calculated = this.run_calculators(rules.set_val_rules, user_input)
 
 	    //now run not-valid rules using updated input
 	    //if any rules run, set can_run_model to false
 	    let not_valid_rules_state = {}
 		let do_then
-	    rules.not_valid_rules.forEach(function(el){
-	        do_then = this.metadata.dt_rules[el].if(calculated)
+		console.log("user input to rules is", user_input)
+	    rules.forEach(function(el){
+	        do_then = this.metadata.dt_rules[el].if(user_input)
 			console.log("result for rule",el,"is",do_then)
 	        if(do_then == 1){
 	            can_run_model = false
@@ -869,13 +876,8 @@ export class GraphContainer {
 	        }
 	    }, this)
 
-	    //apply calculators to input
-	    let calculated_vars = Object.keys(calculated) //was _.keys
-	    let updated_input = Object.assign({}, user_input) //was _.clone
-	    calculated_vars.forEach(function(el){
-	        updated_input[el] = calculated[el]
-	    })
-	    let output = {log:log, can_run:can_run_model, calculated: calculated, updated_input: updated_input}
+
+	    let output = {log:log, can_run:can_run_model}
 	    return output
 	}
 
