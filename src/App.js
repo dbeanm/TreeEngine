@@ -1,5 +1,6 @@
 import React from 'react';
-import {Unit, Layer, DummyModel, GraphContainer, EsynDecisionTree, ModelState} from './script.js';
+import {Unit, Layer, DummyModel, EsynDecisionTree, ModelState} from './script.js';
+import { GraphContainer } from './GraphContainer.js';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from "cytoscape";
 import Select from 'react-select';
