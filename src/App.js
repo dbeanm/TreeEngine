@@ -1258,7 +1258,7 @@ export class ContainerInputManualView extends React.Component {
   }
 
   renderTableHeader() {
-    let header = ["Variable", "Value", "Link"]
+    let header = ["Variable", "Value", "Link", "Calculator"]
     return header.map((key, index) => {
        return <th key={index}>{key}</th>
     })
@@ -1275,6 +1275,8 @@ export class ContainerInputManualView extends React.Component {
        const id_false = `${name}_false`
        const id_unknown = `${name}_unknown`
        const set_by = this.props.unit2input.get_variable_str(name)
+       let calc_by = this.props.variable2calculator[name] === undefined ?  [] : this.props.variable2calculator[name]
+       const calculated_by = calc_by.join(', ')
        //console.log('creating input el for ',name, type, value)
        let badge
        if(state == "warn"){
@@ -1338,6 +1340,7 @@ export class ContainerInputManualView extends React.Component {
         <td>{name}{badge}</td>
         <td>{in_el}</td>
         <td>{set_by}</td>
+        <td>{calculated_by}</td>
       </tr>)
      }
    }
@@ -2471,7 +2474,10 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
           <div className="col">
           <div className={hide}>
-        <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange} unit2input={this.state.container.unit2input}></ContainerInputManualView>
+        <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange} 
+        unit2input={this.state.container.unit2input}
+        variable2calculator={this.state.container.get_calculator_targets()}
+        ></ContainerInputManualView>
         </div>
           </div>
         </div>

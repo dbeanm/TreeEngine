@@ -921,6 +921,21 @@ export class GraphContainer {
 	    return true;
 	}
 
+	get_calculator_targets(){
+		let calcs = this.get_rules_by_type()['set_val_rules']
+		let tgts = {}
+		let t
+		for(const name of calcs){
+			t = this.metadata.dt_rules[name].then.set_variable
+			if(!tgts.hasOwnProperty(t)){
+				tgts[t] = [name]
+			} else {
+				tgts[t].push(name)
+			}
+		}
+		return tgts
+	}
+
 
 
 	update_inputs(current, layer_name, updates){
