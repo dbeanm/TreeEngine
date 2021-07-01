@@ -1,39 +1,39 @@
-class AddLayerError extends Error {
+export class AddLayerError extends Error {
 	constructor(message) {
 	  super(message);
 	  this.name = "AddLayerError";
 	}
 }
 
-class AddEdgeError extends Error {
+export class AddEdgeError extends Error {
 	constructor(message) {
 	  super(message);
 	  this.name = "AddEdgeError";
 	}
 }
 
-class VariableTypeError extends Error {
+export class VariableTypeError extends Error {
 	constructor(message) {
 	  super(message);
 	  this.name = "VariableTypeError";
 	}
 }
 
-class AddUnitError extends Error {
+export class AddUnitError extends Error {
 	constructor(message) {
 	  super(message);
 	  this.name = "AddUnitError";
 	}
 }
 
-class ModelExecutionError extends Error {
+export class ModelExecutionError extends Error {
 	constructor(message) {
 	  super(message);
 	  this.name = "ModelExecutionError";
 	}
 }
 
-class DuplicateEntryError extends Error {
+export class DuplicateEntryError extends Error {
 	constructor(message) {
 	  super(message);
 	  this.name = "DuplicateEntryError";
