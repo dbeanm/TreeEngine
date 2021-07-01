@@ -2285,6 +2285,26 @@ export class Workspace extends React.Component {
           </div>
           </div>
 
+          <div className="row mt-3">
+          <div className="col">
+          <h4>Create link to variable</h4>
+              <p>Add and remove links from a compute unit in a node and a variable in the overall model. When a variable is linked to a unit, the value of the variable is set to the output of the unit.</p>
+              <UnitLinkView
+              handleLinkAdded={this.handleLinkAdded} 
+              handleLinkDeleted={this.handleLinkDeleted} 
+              layer2units={layer2units} 
+              links={this.state.container.unit2input}
+              variables={this.state.container.inputs.usable}
+              //change to existing layer-unit pairs not all layers and available units
+              //send in the ID2name2D object to list current links
+              //need functions for add, delete links
+
+              ></UnitLinkView>
+          </div>
+          </div>
+
+          
+
 
           </div>
 
@@ -2404,21 +2424,6 @@ export class Workspace extends React.Component {
               layers={this.state.container.layer_order}
               handleSubmit={this.handleMultipleUnitsAdded}
               ></MultiSelect>
-              
-              <h4>Create link to variable</h4>
-              <p>Add and remove links from a compute unit in a node and a variable in the overall model. When a variable is linked to a unit, the value of the variable is set to the output of the unit.</p>
-              <UnitLinkView
-              handleLinkAdded={this.handleLinkAdded} 
-              handleLinkDeleted={this.handleLinkDeleted} 
-              layer2units={layer2units} 
-              links={this.state.container.unit2input}
-              variables={this.state.container.inputs.usable}
-              //change to existing layer-unit pairs not all layers and available units
-              //send in the ID2name2D object to list current links
-              //need functions for add, delete links
-
-              ></UnitLinkView>
-
                 
           </div>
           </div>
