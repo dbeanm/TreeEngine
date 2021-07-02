@@ -4,6 +4,11 @@ import { GraphContainer } from './GraphContainer.js';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from "cytoscape";
 import Select from 'react-select';
+import CsvDownloader from 'react-csv-downloader';
+import CSVReader from 'react-csv-reader'
+import styled from 'styled-components'
+import { useTable, usePagination } from 'react-table'
+
 
 class ContainerNotRecognisedError extends Error {
 	constructor(message) {
@@ -1575,6 +1580,121 @@ export class MultiSelect extends React.Component {
   }
 }
 
+function BatchTable({ columns, data }) {
+  // Use the state and functions returned from useTable to build your UI
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    rows,
+    prepareRow,
+  } = useTable({
+    columns,
+    data,
+  })
+
+  // Render the UI for your table
+  return (
+    <table {...getTableProps()}>
+      <thead>
+        {headerGroups.map(headerGroup => (
+          <tr {...headerGroup.getHeaderGroupProps()}>
+            {headerGroup.headers.map(column => (
+              <th {...column.getHeaderProps()}>{column.render('Header')}</th>
+            ))}
+          </tr>
+        ))}
+      </thead>
+      <tbody {...getTableBodyProps()}>
+        {rows.map((row, i) => {
+          prepareRow(row)
+          return (
+            <tr {...row.getRowProps()}>
+              {row.cells.map(cell => {
+                return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+              })}
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
+}
+const Styles = styled.div`
+padding: 1rem;
+
+table {
+  border-spacing: 0;
+  border: 1px solid black;
+
+  tr {
+    :last-child {
+      td {
+        border-bottom: 0;
+      }
+    }
+  }
+
+  th,
+  td {
+    margin: 0;
+    padding: 0.5rem;
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
+
+    :last-child {
+      border-right: 0;
+    }
+  }
+}
+
+.pagination {
+  padding: 0.5rem;
+}
+`
+
+function BatchTableView({raw_columns, raw_data}) {
+  const columns = React.useMemo(() => raw_columns, [raw_columns])
+  // const columns = React.useMemo(
+  //   () => [
+  //     {
+  //       Header: 'Column 1',
+  //       accessor: 'col1', 
+  //     },
+  //     {
+  //       Header: 'Column 2',
+  //       accessor: 'col2',
+  //     },
+  //   ],
+  //   []
+  // )
+
+    const data = React.useMemo(() => raw_data, [raw_data])
+  // const data = React.useMemo(
+  //   () => [
+  //     {
+  //       col1: 'Hello',
+  //       col2: 'World',
+  //     },
+  //     {
+  //       col1: 'react-table',
+  //       col2: 'rocks',
+  //     },
+  //     {
+  //       col1: 'whatever',
+  //       col2: 'you want',
+  //     },
+  //   ],
+  //   []
+  // )
+
+  return (
+    <Styles>
+      <BatchTable columns={columns} data={data} />
+    </Styles>
+  )
+}
+
 export class Workspace extends React.Component {
   constructor(props) {
     super(props);
@@ -1601,7 +1721,9 @@ export class Workspace extends React.Component {
       selected_node: undefined,
       selected_node_is_label: undefined,
       esyn_token: '',
-      esyn_project_grps: []
+      esyn_project_grps: [],
+      batch_dataset: [],
+      batch_header: []
     }
     //this.container = this.props.container
 
@@ -1625,6 +1747,7 @@ export class Workspace extends React.Component {
     this.handleLinkDeleted = this.handleLinkDeleted.bind(this);
     this.addCalculatorToContiner = this.addCalculatorToContiner.bind(this);
     this.deleteCalculatorFromContainer = this.deleteCalculatorFromContainer.bind(this);
+    this.handleBatchUpload = this.handleBatchUpload.bind(this);
   }
   static defaultProps = {
     container: new GraphContainer()
@@ -1971,6 +2094,18 @@ export class Workspace extends React.Component {
     return res
   }
 
+  handleBatchUpload(data, fileInfo){
+    console.dir(data, fileInfo)
+    let header = [] 
+    for(const name of Object.keys(data[0])){
+      header.push({
+        Header: name,
+        accessor: name,
+      })
+    }
+    this.setState({batch_dataset: data, batch_header: header})
+  }
+
   get_project_groups(esyn_projects){
     let project_grps = {}
     for(const project of esyn_projects){
@@ -2056,6 +2191,7 @@ export class Workspace extends React.Component {
         this.setState({fileDownloadUrl: ""})
     })
   }
+
 
   fetch_models(){
     //get available models from some db
@@ -2183,6 +2319,10 @@ export class Workspace extends React.Component {
     for(const [layer_name, layer_data] of Object.entries(this.state.container.layers)){
       layer2units[layer_name] = Object.keys(layer_data['units'])
     }
+
+    const papaparseOptions = {
+      header: true,
+    }
     
 
     return (
@@ -2206,6 +2346,7 @@ export class Workspace extends React.Component {
           <a className="nav-item nav-link" id="nav-workspace-detail-tab" data-toggle="tab" href="#nav-workspace-detail" role="tab" aria-controls="nav-workspace-detail" aria-selected="false">Model Detail</a>
             <a className="nav-item nav-link" id="nav-units-tab" data-toggle="tab" href="#nav-units" role="tab" aria-controls="nav-units" aria-selected="false">Available Units <span className="badge badge-light">{n_available_units}</span></a>
             <a className="nav-item nav-link" id="nav-user-input-tab" data-toggle="tab" href="#nav-user-input" role="tab" aria-controls="nav-user-input" aria-selected="false">Model Input {input_badge}</a>
+            <a className="nav-item nav-link" id="nav-batch-tab" data-toggle="tab" href="#nav-batch" role="tab" aria-controls="nav-batch" aria-selected="false">Batch Mode</a>
             <a className="nav-item nav-link" id="nav-rules-tab" data-toggle="tab" href="#nav-rules" role="tab" aria-controls="nav-rules" aria-selected="false">Calculators and Rules</a>
             <a className="nav-item nav-link" id="nav-save-workspace-tab" data-toggle="tab" href="#nav-save-workspace" role="tab" aria-controls="nav-save-workspace" aria-selected="false">Save/Load</a>
             <a className="nav-item nav-link" id="nav-testing-tab" data-toggle="tab" href="#nav-testing" role="tab" aria-controls="nav-testing" aria-selected="false">Testing</a>
@@ -2302,9 +2443,6 @@ export class Workspace extends React.Component {
               ></UnitLinkView>
           </div>
           </div>
-
-          
-
 
           </div>
 
@@ -2450,6 +2588,34 @@ export class Workspace extends React.Component {
             </div> */}
           </div>
 
+          <div className="tab-pane fade" id="nav-batch" role="tabpanel" aria-labelledby="nav-batch-tab">
+          <div className="row mt-1">
+            <div className="col">
+            <h1>Batch Mode</h1>
+            <div>
+              <h3>Template</h3>
+              <p>Download a batch data template for this model</p>
+              <CsvDownloader columns={Object.keys(this.state.container.inputs.usable)} filename="myfile"
+        extension=".csv">
+          <button className='btn btn-primary'>Get Template</button>
+        </CsvDownloader>
+            </div>
+
+            <div>
+              <h3>Upload</h3>
+              <p>Upload batch data as a csv file. The model will run automatically.</p>
+              <CSVReader onFileLoaded={this.handleBatchUpload} label="Select a batch file " parserOptions={papaparseOptions}/>
+            </div>
+
+            <div>
+              <h3>Results</h3>
+              <BatchTableView raw_columns={this.state.batch_header} raw_data={this.state.batch_dataset}></BatchTableView>
+            </div>
+
+
+            </div>
+            </div>
+          </div>
           
 
 
