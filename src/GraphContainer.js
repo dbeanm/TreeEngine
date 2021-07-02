@@ -489,9 +489,12 @@ export class GraphContainer {
 	run (input = {}, scoped_input = {}) {
 		// run each layer
 		//update state between layers with result of previous
-		if(this.graph_state.valid == false){
-			throw new Terror.ModelExecutionError(`The model structure is not valid`)
-		}
+
+		//this error is now just returned as part of the state to make batch runs easier
+		// if(this.graph_state.valid == false){
+		// 	throw new Terror.ModelExecutionError(`The model structure is not valid`)
+		// }
+		
 		console.log("running model")
 		let checks = this.pre_run_checks(input, false) //currently aren't required variables here
 		console.log("pre run checks", checks)
@@ -500,6 +503,7 @@ export class GraphContainer {
 		if(checks.can_run){
 			const root = this.cy.getElementById(this.graph_state.root)
 			result = this.traverse_from(root, model_input, scoped_input)
+			result['meta'] = 'OK'
 			//check for nodes that did not run, set state accordingly
 			//the nodes that run are ALL in result.path_nodes and ONLY in result.path_nodes
 			seen = new Set(result.path_nodes)
@@ -508,6 +512,7 @@ export class GraphContainer {
 			seen = new Set()
 			this.state = model_input
 			result = {'result': 'did not run'}
+			result['meta'] = 'Model Error'
 		}
 		
 		const all_layers = Object.keys(this.layers)
@@ -519,7 +524,7 @@ export class GraphContainer {
 		
 		console.log("GraphContainer result", result)
 		
-		return result.result
+		return result
 	}
 
 	traverse_from(root_node, user_input, scoped_input){

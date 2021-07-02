@@ -1586,15 +1586,32 @@ function BatchTable({ columns, data }) {
     getTableProps,
     getTableBodyProps,
     headerGroups,
-    rows,
     prepareRow,
-  } = useTable({
-    columns,
-    data,
-  })
+    page, // Instead of using 'rows', we'll use page,
+    // which has only the rows for the active page
+
+    // The rest of these things are super handy, too ;)
+    canPreviousPage,
+    canNextPage,
+    pageOptions,
+    pageCount,
+    gotoPage,
+    nextPage,
+    previousPage,
+    setPageSize,
+    state: { pageIndex, pageSize },
+  } = useTable(
+    {
+      columns,
+      data,
+      initialState: { pageIndex: 0 },
+    },
+    usePagination
+  )
 
   // Render the UI for your table
   return (
+    <>
     <table {...getTableProps()}>
       <thead>
         {headerGroups.map(headerGroup => (
@@ -1606,18 +1623,63 @@ function BatchTable({ columns, data }) {
         ))}
       </thead>
       <tbody {...getTableBodyProps()}>
-        {rows.map((row, i) => {
-          prepareRow(row)
-          return (
-            <tr {...row.getRowProps()}>
-              {row.cells.map(cell => {
-                return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
-              })}
-            </tr>
-          )
-        })}
-      </tbody>
+          {page.map((row, i) => {
+            prepareRow(row)
+            return (
+              <tr {...row.getRowProps()}>
+                {row.cells.map(cell => {
+                  return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                })}
+              </tr>
+            )
+          })}
+        </tbody>
     </table>
+    <div className="pagination">
+    <button onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
+      {'<<'}
+    </button>{' '}
+    <button onClick={() => previousPage()} disabled={!canPreviousPage}>
+      {'<'}
+    </button>{' '}
+    <button onClick={() => nextPage()} disabled={!canNextPage}>
+      {'>'}
+    </button>{' '}
+    <button onClick={() => gotoPage(pageCount - 1)} disabled={!canNextPage}>
+      {'>>'}
+    </button>{' '}
+    <span>
+      Page{' '}
+      <strong>
+        {pageIndex + 1} of {pageOptions.length}
+      </strong>{' '}
+    </span>
+    <span>
+      | Go to page:{' '}
+      <input
+        type="number"
+        defaultValue={pageIndex + 1}
+        onChange={e => {
+          const page = e.target.value ? Number(e.target.value) - 1 : 0
+          gotoPage(page)
+        }}
+        style={{ width: '100px' }}
+      />
+    </span>{' '}
+    <select
+      value={pageSize}
+      onChange={e => {
+        setPageSize(Number(e.target.value))
+      }}
+    >
+      {[10, 20, 30, 40, 50].map(pageSize => (
+        <option key={pageSize} value={pageSize}>
+          Show {pageSize}
+        </option>
+      ))}
+    </select>
+  </div>
+  </>
   )
 }
 const Styles = styled.div`
@@ -2096,14 +2158,66 @@ export class Workspace extends React.Component {
 
   handleBatchUpload(data, fileInfo){
     console.dir(data, fileInfo)
-    let header = [] 
-    for(const name of Object.keys(data[0])){
-      header.push({
-        Header: name,
-        accessor: name,
-      })
+    let header_upload = Object.keys(data[0])
+    // .map((name) => {
+    //   return {Header: name, accessor: name,}
+    // })
+    let variables = Object.keys(this.state.container.inputs.usable)
+    let layers = this.state.container.variables
+    let output_header = this.make_batch_header(variables, layers, header_upload)
+
+    //run model
+    let result
+    let all_results = []
+    for (const row of data) {
+      try {
+        result = this.state.container.run(row) 
+      } catch (error) {
+        result = {'meta': "Unknown model error"}
+      }
+      
+      all_results.push(Object.assign(row, this.make_batch_result_row(result)))
     }
-    this.setState({batch_dataset: data, batch_header: header})
+    
+
+    this.setState({batch_dataset: all_results, batch_header: output_header})
+  }
+
+  make_batch_header(variables, layers, header_upload){
+    //merge uploaded header with all model variables
+    const allVarNames = new Set([
+      ...variables,
+      ...header_upload
+    ]);
+    const allVarNamesArray = [...allVarNames];
+    let header = allVarNamesArray.map((name) => {
+      return {Header: name, accessor:  name,}
+    })
+    let part, n
+    for (const [layer_name, units] of Object.entries(layers)) {
+        part = Object.keys(units).map((unit_name) => {
+          n = `TE-${layer_name}-${unit_name}`
+          return {Header: n, accessor: n,}
+        })
+        header = header.concat(part)
+    }
+    header.push({Header: 'TE-meta-state', accessor: 'TE-meta-state',})
+    return header
+  }
+
+  make_batch_result_row(result){
+    let res = {}
+    let n
+    res['TE-meta-state'] = result['meta']
+    if(result['meta'] == 'OK'){
+      for (const [layer_name, unit_names] of Object.entries(result.result)) {
+        for (const [unit_name, unit_res] of Object.entries(unit_names)) {
+          n = `TE-${layer_name}-${unit_name}`
+          res[n] = unit_res
+        }
+      }
+    }
+    return res
   }
 
   get_project_groups(esyn_projects){
@@ -2266,7 +2380,7 @@ export class Workspace extends React.Component {
       }
     }
     const result = this.state.container.run(input)
-    this.setState({result: result})
+    this.setState({result: result.result})
   }
 
   render() {
