@@ -2720,22 +2720,26 @@ export class Workspace extends React.Component {
           <button className='btn btn-primary'>Get Template</button>
         </CsvDownloader>
             </div>
+            </div>
+            </div>
 
-            <div>
+            <div className="row mt-1">
+          <div className="col">
               <h3>Upload</h3>
               <p>Upload batch data as a csv file. The model will run automatically.</p>
               <CSVReader onFileLoaded={this.handleBatchUpload} label="Select a batch file " parserOptions={papaparseOptions}/>
             </div>
+            </div>
 
-            <div>
+            <div className="row mt-1">
+          <div className="col">
               <h3>Results</h3>
               <BatchTableView raw_columns={this.state.batch_header} raw_data={this.state.batch_dataset}></BatchTableView>
             </div>
+            </div>
 
 
             </div>
-            </div>
-          </div>
           
 
 
