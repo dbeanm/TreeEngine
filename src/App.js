@@ -1751,9 +1751,15 @@ function BatchTableView({raw_columns, raw_data}) {
   // )
 
   return (
+    <>
     <Styles>
       <BatchTable columns={columns} data={data} />
     </Styles>
+    <CsvDownloader datas={raw_data} filename="batch_mode_results"
+        extension=".csv">
+          <button className='btn btn-primary'>Download</button>
+    </CsvDownloader>
+    </>
   )
 }
 
