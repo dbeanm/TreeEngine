@@ -2709,7 +2709,7 @@ export class Workspace extends React.Component {
             <div>
               <h3>Template</h3>
               <p>Download a batch data template for this model</p>
-              <CsvDownloader columns={Object.keys(this.state.container.inputs.usable)} filename="myfile"
+              <CsvDownloader columns={Object.keys(this.state.container.inputs.usable)} filename="batch_mode_header"
         extension=".csv">
           <button className='btn btn-primary'>Get Template</button>
         </CsvDownloader>
