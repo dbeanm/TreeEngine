@@ -397,8 +397,21 @@ export class GraphContainer {
 
 	add_unit_to_layer(layer_name, unit, unit_name = unit.name){
 		console.log(`adding unit ${unit.name} to ${layer_name} with name ${unit_name}`)
-		this.layers[layer_name].add_unit(unit, unit_name)
-		this.resolve_inputs()
+		let ok = true
+		try {
+			this.layers[layer_name].add_unit(unit, unit_name)
+		} catch (error) {
+			ok = false
+		}
+		if(ok){
+			console.log('unit added, resolving inputs')
+			this.resolve_inputs()
+			return true
+		} else {
+			console.log("cannot add unit to layer")
+			return false
+		}
+		
 	}
 
 	delete_unit_from_layer(layer_name, unit_name){
@@ -958,6 +971,7 @@ export class GraphContainer {
 	resolve_inputs(){
 		this.inputs = {'conflict': {}, 'usable': {}}
 		this.variables = {}
+		console.log("finding variables")
 		//initialise this.variables from layers
 		for (const layer_name of Object.keys(this.layers)){
 			this.variables[layer_name] = this.layers[layer_name].variables
@@ -981,6 +995,7 @@ export class GraphContainer {
 			}
 		}
 
+		console.log("checking variable conflicts")
 		let ob;
 		for (const [key, value] of Object.entries(seen)) {
 			if(value.types.size === 1){
@@ -1002,6 +1017,7 @@ export class GraphContainer {
 
 		//now check that none of the metadata.conditions refers to a variable not in the refreshed
 		//list of usable variables
+		console.log("check conditions for missing/error variables")
 		let to_delete
 		let refresh_labels = false
 		for(const [label_id, conds] of Object.entries(this.metadata.conditions)){
@@ -1019,6 +1035,7 @@ export class GraphContainer {
 
 		//check for dt_ui_groups that contain variables that no longer exist
 		//and make sure every variable is in a group
+		console.log("updating ui groups")
 		let has_group = []
 		let updated_ui_grps = {}
 		for(const [grp, members] of Object.entries(this.metadata.dt_ui_groups)){
@@ -1038,7 +1055,7 @@ export class GraphContainer {
 			}
 		}
 		this.metadata.dt_ui_groups = updated_ui_grps
-
+		console.log("done resolving inputs")
 	}
 
 	add_dt_ui_group(name){

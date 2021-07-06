@@ -1946,6 +1946,7 @@ export class Workspace extends React.Component {
     this.handleBatchUpload = this.handleBatchUpload.bind(this);
     this.handleUIGroupAdded = this.handleUIGroupAdded.bind(this);
     this.handleUIGroupUpdate = this.handleUIGroupUpdate.bind(this);
+    this.updateInputObjectFromContainer = this.updateInputObjectFromContainer.bind(this);
   }
   static defaultProps = {
     container: new GraphContainer()
@@ -2039,21 +2040,26 @@ export class Workspace extends React.Component {
     })
 
     if(can_add){
+      console.log("layer and unit names are valid")
       let do_update = true
+      let ok
       for(const name of unit_names){
+        console.log(`trying to add ${name} to ${layer_name}`)
         try {
-          c.add_unit_to_layer(layer_name, this.state.available_units[name])
+          ok = c.add_unit_to_layer(layer_name, this.state.available_units[name])
+          console.log(ok)
         }
         catch(err) {
           console.log(err)
           do_update = false
-          break
         }
       }
       if(do_update){
+        console.log("no errors adding units, merge onto user input")
         let all_inputs = this.updateInputObjectFromContainer(c, false)
 
         //should only setstate if all units were added successfully
+        console.log('update app state')
         this.setState({container: c, user_input: all_inputs})
       } else {
         alert("selected units cannot be added")
