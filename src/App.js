@@ -1261,8 +1261,8 @@ export class VariableUIGroups extends React.Component {
     let listItems = groups.map((group_name) =>
       // Correct! Key should be specified inside the array.
       // <ListItem key={layer_name} name={layer_name} />
-        <ul>
-      <li key={group_name}>{group_name}</li>
+        <ul key={group_name}>
+      <li >{group_name}</li>
       <ListOfItems items={this.props.groups[group_name]}/>
       </ul>
       
@@ -1411,85 +1411,97 @@ export class ContainerInputManualView extends React.Component {
 
  renderTableData() {
    let listItems = []
-   let in_el;
+   let in_el, gr;
    //TODO change this to use props.dt_ui_groups
-   for (const key in this.props.inputs) {
-     if (this.props.inputs.hasOwnProperty(key)) {
-       const element = this.props.inputs[key];
-       const { name, type, value, state } = element
-       const id_true = `${name}_true`
-       const id_false = `${name}_false`
-       const id_unknown = `${name}_unknown`
-       const set_by = this.props.unit2input.get_variable_str(name)
-       let calc_by = this.props.variable2calculator[name] === undefined ?  [] : this.props.variable2calculator[name]
-       const calculated_by = calc_by.join(', ')
-       //console.log('creating input el for ',name, type, value)
-       let badge
-       if(state == "warn"){
-        badge = <span className="badge badge-pill badge-warning">Warning</span>
-       } else {
-        badge = <span></span>
-       }
-      if(type == "num"){
-          in_el = <input type="number" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
-      } else if(type == 'bool'){
-          in_el = (<div>
-            <div className="form-check">
-            <input
-              id={id_true}
-              type="radio"
-              name={name}
-              value="True"
-              checked={value === "True"}
-              className="form-check-input"
-              onChange={this.handleChange} 
-            />
-            <label htmlFor={id_true} className="form-check-label">
-            True
-          </label>
-          </div>
-          
-          <div className="form-check">
-          <input
-            id={id_false}
-            type="radio"
-            name={name}
-            value="False"
-            checked={value === "False"}
-            className="form-check-input"
-            onChange={this.handleChange} 
-          />
-          <label htmlFor={id_false} className="form-check-label">
-          False
-        </label>
-        </div>
-        
-        <div className="form-check">
-        <input
-          id={id_unknown}
-          type="radio"
-          name={name}
-          value=""
-          checked={value === ""}
-          className="form-check-input"
-          onChange={this.handleChange} 
-        />
-        <label htmlFor={id_unknown} className="form-check-label">
-        Unknown
-      </label>
-      </div>
-      </div>)
-      } else {
-          in_el = <input type="text" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
-      }
-      listItems.push(<tr key={name}>
-        <td>{name}{badge}</td>
-        <td>{in_el}</td>
-        <td>{set_by}</td>
-        <td>{calculated_by}</td>
+   for (const [group, vs] of Object.entries(this.props.dt_ui_groups)){
+      //label row
+      gr = `___${group}___`
+      listItems.push(<tr key={gr}>
+        <td><strong>{group}</strong></td>
+        <td></td>
+        <td></td>
+        <td></td>
       </tr>)
-     }
+      //variable rows
+      for (const key of vs) {
+        if (this.props.inputs.hasOwnProperty(key)) {
+          const element = this.props.inputs[key];
+          const { name, type, value, state } = element
+          const id_true = `${name}_true`
+          const id_false = `${name}_false`
+          const id_unknown = `${name}_unknown`
+          const set_by = this.props.unit2input.get_variable_str(name)
+          let calc_by = this.props.variable2calculator[name] === undefined ?  [] : this.props.variable2calculator[name]
+          const calculated_by = calc_by.join(', ')
+          //console.log('creating input el for ',name, type, value)
+          let badge
+          if(state == "warn"){
+           badge = <span className="badge badge-pill badge-warning">Warning</span>
+          } else {
+           badge = <span></span>
+          }
+         if(type == "num"){
+             in_el = <input type="number" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
+         } else if(type == 'bool'){
+             in_el = (<div>
+               <div className="form-check">
+               <input
+                 id={id_true}
+                 type="radio"
+                 name={name}
+                 value="True"
+                 checked={value === "True"}
+                 className="form-check-input"
+                 onChange={this.handleChange} 
+               />
+               <label htmlFor={id_true} className="form-check-label">
+               True
+             </label>
+             </div>
+             
+             <div className="form-check">
+             <input
+               id={id_false}
+               type="radio"
+               name={name}
+               value="False"
+               checked={value === "False"}
+               className="form-check-input"
+               onChange={this.handleChange} 
+             />
+             <label htmlFor={id_false} className="form-check-label">
+             False
+           </label>
+           </div>
+           
+           <div className="form-check">
+           <input
+             id={id_unknown}
+             type="radio"
+             name={name}
+             value=""
+             checked={value === ""}
+             className="form-check-input"
+             onChange={this.handleChange} 
+           />
+           <label htmlFor={id_unknown} className="form-check-label">
+           Unknown
+         </label>
+         </div>
+         </div>)
+         } else {
+             in_el = <input type="text" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
+         }
+         listItems.push(<tr key={name}>
+           <td>{name}{badge}</td>
+           <td>{in_el}</td>
+           <td>{set_by}</td>
+           <td>{calculated_by}</td>
+         </tr>)
+        }
+      }
    }
+   
    return ( listItems )
 }
 
