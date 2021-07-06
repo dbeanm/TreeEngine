@@ -1677,10 +1677,20 @@ export class MultiSelect extends React.Component {
     this.setState({ selectedLayer: selectedOption });
   }
 
-  handleSubmit () {
-    const selected = this.state.selectedOption.map((x) => x.value)
-    const layer = this.state.selectedLayer.value
-    this.props.handleSubmit(selected, layer)
+  handleSubmit (event) {
+    event.preventDefault()
+    if(this.state.selectedOption === null || this.state.selectedLayer === null){
+      console.log("missing units or layer")
+      return false
+    } else {
+      const selected = this.state.selectedOption.map((x) => x.value)
+      const layer = this.state.selectedLayer.value
+      let ok = this.props.handleSubmit(selected, layer)
+      if(ok){
+        this.setState({selectedOption: null, selectedLayer: null})
+      }
+    }
+    
   }
 
   render () {
@@ -1708,6 +1718,7 @@ export class MultiSelect extends React.Component {
            options={listItems}
            isMulti
            closeMenuOnSelect={false}
+           value={this.state.selectedOption}
          />
         </div>
         </div>
@@ -1721,6 +1732,7 @@ export class MultiSelect extends React.Component {
           <Select
            onChange={this.handleChangeLayer}
            options={listLayers}
+           value={this.state.selectedLayer}
          />
          </div>
         </div>
@@ -2027,6 +2039,7 @@ export class Workspace extends React.Component {
     //layer_name : name of a layer in this.container.layers
     //the name_in_layer (as in handleUnitAdded) can only be set when a single unit is added
     let can_add = true
+    let do_update
     let c = this.state.container
     if(!c.layers.hasOwnProperty(layer_name)){
       console.log("layer does not exist", layer_name)
@@ -2041,7 +2054,7 @@ export class Workspace extends React.Component {
 
     if(can_add){
       console.log("layer and unit names are valid")
-      let do_update = true
+      do_update = true
       let ok
       for(const name of unit_names){
         console.log(`trying to add ${name} to ${layer_name}`)
@@ -2065,7 +2078,7 @@ export class Workspace extends React.Component {
         alert("selected units cannot be added")
       }
     }
-    
+    return can_add && do_update
   }
 
   handleUnitRenameInLayer(layer, old_name, new_name){
