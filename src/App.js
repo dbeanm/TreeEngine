@@ -34,6 +34,24 @@ export class InputListItem extends React.Component {
   }
 }
 
+export class ListOfItems extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    const listItems = this.props.items.map((name) =>
+    // Correct! Key should be specified inside the array.
+    <li key={name}>{name}</li>
+  );
+    return (
+      <ul>
+        {listItems}
+      </ul>
+    );
+  }
+}
+
 export class UnitView extends React.Component {
   constructor(props) {
     super(props);
@@ -1201,6 +1219,128 @@ export class ResultsView extends React.Component {
   }
 }
 
+export class VariableUIGroups extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {selectedGroup: null, selectedVariable: null}
+    this.handleSubmit = this.handleSubmit.bind(this)
+    this.handleSubmitUIGroups = this.handleSubmitUIGroups.bind(this)
+  }
+
+  handleChangeGroup = (selectedOption) => {
+	  this.setState({ selectedGroup: selectedOption });
+	}
+  
+	handleChangeVariable = (selectedOption) => {
+	  this.setState({ selectedVariable: selectedOption });
+	}
+
+  handleSubmit(event){
+    event.preventDefault();
+	  let els = event.target.elements
+	  const group_name = els.new_group_name.value
+  
+	  const ok = this.props.handleGroupAdded(group_name)
+	  if(ok){
+		  event.target.reset()
+	  }
+  }
+
+  handleSubmitUIGroups(event){
+    event.preventDefault();
+    const variables = this.state.selectedVariable.map((x) => x.value)
+	  const group = this.state.selectedGroup.value
+    const ok = this.props.handleUIGroupUpdate(group, variables)
+	  if(ok){
+		  this.setState({selectedGroup: null, selectedVariable: null})
+	  }
+  }
+
+  render() {
+    const groups = Object.keys(this.props.groups)
+    let listItems = groups.map((group_name) =>
+      // Correct! Key should be specified inside the array.
+      // <ListItem key={layer_name} name={layer_name} />
+        <ul>
+      <li key={group_name}>{group_name}</li>
+      <ListOfItems items={this.props.groups[group_name]}/>
+      </ul>
+      
+    );
+    if (listItems.length == 0){
+      listItems = [<li key={1}>Nothing to display</li>]
+    }
+
+    //list of variables for multiselect
+    let listVariables = this.props.variables.map((var_name) =>
+      ({value:var_name, label:var_name})
+     );
+    
+    let listGroups = Object.keys(this.props.groups).map((group_name) =>
+     ({value:group_name, label:group_name})
+    );
+
+
+    return (
+      <div>
+        <form onSubmit={this.handleSubmit}>
+  
+        <div className="form-group row">
+        <label htmlFor='new_ui_group' className="col-sm-2 col-form-label">
+        New UI Group
+        </label>
+        <div className="col-sm-10">
+        <input type="text" name="new_group_name" id="new_ui_group" className="form-control" placeholder="New group name"></input>
+        </div>
+        </div>
+        <input type="submit" value="Add" className="btn btn-primary btn-block"/>
+        </form>
+
+        <p>Current groups</p>        
+        
+          {listItems}
+        
+
+        <h5>Assign groups</h5>
+        <form>
+		  <div className="form-group row">
+		  <label htmlFor='multi-variable-select' className="col-sm-2 col-form-label">
+		  Select Variables
+		  </label>
+		  <div id="multi-variable-select" className="col-sm-10">
+		  <Select
+			 onChange={this.handleChangeVariable}
+			 options={listVariables}
+			 isMulti
+			 closeMenuOnSelect={false}
+       value={this.state.selectedVariable}
+		   />
+		  </div>
+		  </div>
+		  
+		  <div className="form-group row">
+		  <label htmlFor='multi-group-select' className="col-sm-2 col-form-label">
+		  Select Group
+		  </label>
+		  <div className="col-sm-10">
+			<div id="multi-group-select">
+			<Select
+			 onChange={this.handleChangeGroup}
+			 options={listGroups}
+       value={this.state.selectedGroup}
+		   />
+		   </div>
+		  </div>
+		  </div>
+				 
+		   <button className="btn btn-primary btn-block" onClick={this.handleSubmitUIGroups}>Update</button>
+		   </form>
+      </div>
+    );
+  }
+}
+
+
 export class ContainerVariablesView extends React.Component {
   constructor(props) {
     super(props);
@@ -1272,6 +1412,7 @@ export class ContainerInputManualView extends React.Component {
  renderTableData() {
    let listItems = []
    let in_el;
+   //TODO change this to use props.dt_ui_groups
    for (const key in this.props.inputs) {
      if (this.props.inputs.hasOwnProperty(key)) {
        const element = this.props.inputs[key];
@@ -1612,7 +1753,7 @@ function BatchTable({ columns, data }) {
   // Render the UI for your table
   return (
     <>
-    <table {...getTableProps()}>
+    <table className="table table-bordered" {...getTableProps()}>
       <thead>
         {headerGroups.map(headerGroup => (
           <tr {...headerGroup.getHeaderGroupProps()}>
@@ -1684,31 +1825,6 @@ function BatchTable({ columns, data }) {
 }
 const Styles = styled.div`
 padding: 1rem;
-
-table {
-  border-spacing: 0;
-  border: 1px solid black;
-
-  tr {
-    :last-child {
-      td {
-        border-bottom: 0;
-      }
-    }
-  }
-
-  th,
-  td {
-    margin: 0;
-    padding: 0.5rem;
-    border-bottom: 1px solid black;
-    border-right: 1px solid black;
-
-    :last-child {
-      border-right: 0;
-    }
-  }
-}
 
 .pagination {
   padding: 0.5rem;
@@ -1816,6 +1932,8 @@ export class Workspace extends React.Component {
     this.addCalculatorToContiner = this.addCalculatorToContiner.bind(this);
     this.deleteCalculatorFromContainer = this.deleteCalculatorFromContainer.bind(this);
     this.handleBatchUpload = this.handleBatchUpload.bind(this);
+    this.handleUIGroupAdded = this.handleUIGroupAdded.bind(this);
+    this.handleUIGroupUpdate = this.handleUIGroupUpdate.bind(this);
   }
   static defaultProps = {
     container: new GraphContainer()
@@ -1841,6 +1959,24 @@ export class Workspace extends React.Component {
         }
       }
       return all_inputs
+  }
+
+  handleUIGroupAdded(name){
+    let c = this.state.container
+    let ok = c.add_dt_ui_group(name)
+    if(ok){
+      this.setState({container:c})
+    }
+    return ok
+  }
+
+  handleUIGroupUpdate(group, variables){
+    let c = this.state.container
+    let ok = c.update_dt_ui_group(group, variables)
+    if(ok){
+      this.setState({container:c})
+    }
+    return ok
   }
 
   handleUnitAdded(unit_name, layer_name, name_in_layer = unit_name){
@@ -2468,6 +2604,7 @@ export class Workspace extends React.Component {
             <a className="nav-item nav-link" id="nav-user-input-tab" data-toggle="tab" href="#nav-user-input" role="tab" aria-controls="nav-user-input" aria-selected="false">Model Input {input_badge}</a>
             <a className="nav-item nav-link" id="nav-batch-tab" data-toggle="tab" href="#nav-batch" role="tab" aria-controls="nav-batch" aria-selected="false">Batch Mode</a>
             <a className="nav-item nav-link" id="nav-rules-tab" data-toggle="tab" href="#nav-rules" role="tab" aria-controls="nav-rules" aria-selected="false">Calculators and Rules</a>
+            <a className="nav-item nav-link" id="nav-settings-tab" data-toggle="tab" href="#nav-settings" role="tab" aria-controls="nav-settings" aria-selected="false">Settings</a>
             <a className="nav-item nav-link" id="nav-save-workspace-tab" data-toggle="tab" href="#nav-save-workspace" role="tab" aria-controls="nav-save-workspace" aria-selected="false">Save/Load</a>
             <a className="nav-item nav-link" id="nav-testing-tab" data-toggle="tab" href="#nav-testing" role="tab" aria-controls="nav-testing" aria-selected="false">Testing</a>
           </div>
@@ -2687,6 +2824,21 @@ export class Workspace extends React.Component {
           </div>
           </div>
 
+          <div className="tab-pane fade" id="nav-settings" role="tabpanel" aria-labelledby="nav-settings-tab">
+          <div className="row mt-1">
+            <div className="col">
+              <h4>Settings</h4>
+              <VariableUIGroups 
+                groups={this.state.container.metadata.dt_ui_groups}
+                handleGroupAdded={this.handleUIGroupAdded}
+                variables={Object.keys(this.state.container.inputs.usable)}
+                handleUIGroupUpdate={this.handleUIGroupUpdate}
+                ></VariableUIGroups>
+            </div>
+            </div>
+
+          </div>
+
 
           <div className="tab-pane fade" id="nav-workspace-detail" role="tabpanel" aria-labelledby="nav-workspace-detail-tab">
           <div className="row mt-1">
@@ -2772,6 +2924,8 @@ export class Workspace extends React.Component {
         <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange} 
         unit2input={this.state.container.unit2input}
         variable2calculator={this.state.container.get_calculator_targets()}
+        dt_ui_groups={this.state.container.metadata.dt_ui_groups}
+        
         ></ContainerInputManualView>
         </div>
           </div>

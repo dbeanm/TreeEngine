@@ -1016,5 +1016,78 @@ export class GraphContainer {
 			//if we changed any labels, update the graph once at the end
 			this.update_graph_els()
 		}
+
+		//check for dt_ui_groups that contain variables that no longer exist
+		//and make sure every variable is in a group
+		let has_group = []
+		let updated_ui_grps = {}
+		for(const [grp, members] of Object.entries(this.metadata.dt_ui_groups)){
+			updated_ui_grps[grp] = []
+			for(const m of members){
+				if(seen.hasOwnProperty(m)){
+					has_group.push(m)
+					updated_ui_grps[grp].push(m)
+				} else {
+					console.log('variable', m, 'no longer exists, removing from ui group', grp)
+				}
+			}
+		}
+		for (const v of Object.keys(seen)) {
+			if(has_group.indexOf(v) === -1){
+				updated_ui_grps[''].push(v)
+			}
+		}
+		this.metadata.dt_ui_groups = updated_ui_grps
+
+	}
+
+	add_dt_ui_group(name){
+		if(this.metadata.dt_ui_groups.hasOwnProperty(name)){
+			return false
+		}
+		this.metadata.dt_ui_groups[name] = []
+		return true
+	}
+
+	update_dt_ui_group(group, variables){
+		//check that all the variables exist
+		let vs = variables.filter((v) => this.inputs.usable.hasOwnProperty(v))
+		let v2g = this.get_ui_groups()
+		
+		//if the group does not already exist, add it
+		if(!this.metadata.dt_ui_groups.hasOwnProperty(group)){
+			this.metadata.dt_ui_groups[group] = []
+		}
+		let cpy = Object.assign({}, this.metadata.dt_ui_groups)
+
+		let oldgrp
+		for(const v of vs){
+			//only add if not already in
+			if(cpy[group].indexOf(v) === -1){
+				//put in new group
+				cpy[group].push(v)
+				//remove from old group
+				oldgrp = v2g[v]
+				cpy[oldgrp] = cpy[oldgrp].filter(item => item !== v)
+			}
+		}
+
+		this.metadata.dt_ui_groups = cpy
+		return true
+	}
+
+	get_ui_groups(){
+		let m = {}
+		for(const [g, vs] of Object.entries(this.metadata.dt_ui_groups)){
+			for(const v of vs){
+				if(!m.hasOwnProperty(v)){
+					m[v] = [g]
+				}
+				else {
+					m[v].push(g)
+				}
+			}
+		}
+		return m
 	}
 }
