@@ -969,7 +969,7 @@ export class ContainerView extends React.Component {
       <div className="containerview">
         <p>Model Container</p>        
         <p>Full input list</p>
-        <ContainerVariablesView variables={this.props.container.variables}></ContainerVariablesView>
+        <ContainerVariablesView variables={this.props.container.inputs}></ContainerVariablesView>
         <p>Layers ({layers.length}):</p>
         <ul>
           {listItems}
@@ -1347,27 +1347,15 @@ export class ContainerVariablesView extends React.Component {
   }
 
   render() {
-    const all_contained_variables = {}
-    let s, ss
     let listItems = []
-    let k = 0
-    for (const layer_name in this.props.variables) {
-      const layer = this.props.variables[layer_name];
-      for (const unit_name in layer) {
-        const vars_in_unit = layer[unit_name];
-        for (const var_name in vars_in_unit) {
-          const var_data = vars_in_unit[var_name];
-          if(!all_contained_variables.hasOwnProperty(var_data)){
-            all_contained_variables[var_name] = []
-          }
-          s = `as ${var_data.type} in ${layer_name} - ${unit_name}`
-          all_contained_variables[var_name].push(s)
-          ss = `${var_name} as ${var_data.type} in ${layer_name} - ${unit_name}`
-          listItems.push(<ListItem key={k} name={ss} />)
-          k += 1
-        }
-      }
+    let k=0
+    let ss
+    for(const [var_name, var_data] of Object.entries(this.props.variables.usable)){
+      ss = `${var_name} as ${var_data.type} in ` + var_data.appears.join(", ")
+      listItems.push(<ListItem key={k} name={ss} />)
+      k+=1
     }
+
     return (
       <ul>
         {listItems}
