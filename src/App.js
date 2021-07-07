@@ -1959,6 +1959,7 @@ export class Workspace extends React.Component {
     this.handleUIGroupAdded = this.handleUIGroupAdded.bind(this);
     this.handleUIGroupUpdate = this.handleUIGroupUpdate.bind(this);
     this.updateInputObjectFromContainer = this.updateInputObjectFromContainer.bind(this);
+    this.reset_inputs = this.reset_inputs.bind(this);
   }
   static defaultProps = {
     container: new GraphContainer()
@@ -1983,7 +1984,16 @@ export class Workspace extends React.Component {
           all_inputs[key] = Object.assign(all_inputs[key], c.inputs.usable[key])
         }
       }
-      return all_inputs
+
+    return all_inputs
+      
+  }
+
+  reset_inputs(){
+    let c = this.state.container
+    let all_inputs = this.updateInputObjectFromContainer(c, true)
+  
+    this.setState({user_input: all_inputs})
   }
 
   handleUIGroupAdded(name){
@@ -2027,7 +2037,7 @@ export class Workspace extends React.Component {
     if(can_add){
       c.add_unit_to_layer(layer_name, this.state.available_units[unit_name], name_in_layer)
 
-      let all_inputs = this.updateInputObjectFromContainer(c)
+      let all_inputs = this.updateInputObjectFromContainer(c, false)
   
       this.setState({container: c, user_input: all_inputs})
     }
@@ -2938,6 +2948,7 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
           <div className="col">
             <button type="button" className="btn btn-success" onClick={() => this.run_model()} disabled={!model_can_build}>Run</button>
+            <button type="button" className="btn btn-warning" onClick={() => this.reset_inputs()}>Reset</button>
           </div>
         </div>
 
