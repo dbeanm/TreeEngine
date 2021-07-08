@@ -395,6 +395,7 @@ export class EsynDecisionTree extends Model{
 			}
 			
 		}, this)
+		console.log("first pass missing variables", all_missing_input)
 
 		//now run calculators
 		let calculated = this.run_calculators(rules.set_val_rules, input)
@@ -409,8 +410,11 @@ export class EsynDecisionTree extends Model{
 		//required variables must be set
 		let missing = []
 		if(enforce_required == true){
-		    let all_vars = Object.keys(model_input)
-		    all_vars.forEach(function(el){
+			console.log("second pass checking required variables")
+		    //previously Object.keys(model_input) was iterated here, but that means if a required variable is 
+			//missing ENTIRELY it is never detected
+			//let all_vars = Object.keys(model_input)
+		    all_variables.forEach(function(el){
 				if(this.metadata.variables.hasOwnProperty(el) && this.metadata.variables[el].required == true ){
 					if(model_input.hasOwnProperty(el)){
 						val = model_input[el]
@@ -426,6 +430,8 @@ export class EsynDecisionTree extends Model{
 		        	
 				}
 		    }, this)
+		} else {
+			console.log("Second pass not checking required variables")
 		}
 
 		//stop if input not valid
