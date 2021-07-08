@@ -384,12 +384,16 @@ export class EsynDecisionTree extends Model{
 		if( this.metadata.variables[el].required == true ){
 				all_required.push(el)
 			}
-
-			val = input[el]
-			type = this.metadata.variables[el].value_type
-			if ( type == 'num' && isNaN(val)  ||  type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
+			if(input.hasOwnProperty(el)){
+				val = input[el]
+				type = this.metadata.variables[el].value_type
+				if ( type == 'num' && isNaN(val)  ||  type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
+					all_missing_input.push(el)
+				}
+			} else {
 				all_missing_input.push(el)
 			}
+			
 		}, this)
 
 		//now run calculators
@@ -408,12 +412,18 @@ export class EsynDecisionTree extends Model{
 		    let all_vars = Object.keys(model_input)
 		    all_vars.forEach(function(el){
 				if(this.metadata.variables.hasOwnProperty(el) && this.metadata.variables[el].required == true ){
-		        	val = model_input[el]
-		        	type = this.metadata.variables[el].value_type
-			        if ( type == 'num' && isNaN(val) || type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
+					if(model_input.hasOwnProperty(el)){
+						val = model_input[el]
+						type = this.metadata.variables[el].value_type
+						if ( type == 'num' && isNaN(val) || type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
+							missing.push(el)
+							this.model_eval_log.push("Missing required input: " + el)
+						}
+					} else {
 						missing.push(el)
 						this.model_eval_log.push("Missing required input: " + el)
-			        }
+					}
+		        	
 				}
 		    }, this)
 		}
@@ -774,8 +784,23 @@ export class ModelState {
 		this.value = value
 	}
 
+	set_none(message){
+		//e.g. for layers that are not in the path
+		//so that the model can have a set empty result rather than a blank ModelState
+		this.status = "None"
+		this.message = message
+	}
+
 	is_ok(){
 		return this.status == "OK"
+	}
+
+	to_cell(){
+		if(this.is_ok()){
+			return this.value
+		} else {
+			return `TE-STATE-${this.status}-${this.message}`
+		}
 	}
 }
 

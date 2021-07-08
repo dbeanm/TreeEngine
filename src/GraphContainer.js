@@ -531,8 +531,15 @@ export class GraphContainer {
 		const all_layers = Object.keys(this.layers)
 		let difference = new Set(
 			all_layers.filter(x => !seen.has(x)));
+		let ms
 		for(const l of difference){
 			this.layers[l].reset_state()
+			result.states[l] = {}
+			for(const u of Object.keys(this.layers[l].units)){
+				ms = new ModelState()
+				ms.set_none("NotInPath")
+				result.states[l][u] = ms
+			}
 		}
 		
 		console.log("GraphContainer result", result)
@@ -569,7 +576,7 @@ export class GraphContainer {
 			let layer_r = this.layers[next_src].run(user_input, scoped_input)
 			user_input = this.update_inputs(user_input, next_src, layer_r.results)
 			result[next_src] = layer_r.results
-			states[root_node.id()] = layer_r.states
+			states[next_src] = layer_r.states
 
 			path_nodes.push(next_src)
 			path_edges = path_edges.concat(can_reach.reachable_ids[next_src])

@@ -1891,6 +1891,54 @@ function BatchTableView({raw_columns, raw_data}) {
   )
 }
 
+function BatchTableViewTest() {
+  let n = 'TE-Layer_0-test calculator modes.esynGraph.txt'
+  const columns = React.useMemo(
+    () => [
+      {
+        Header: 'col1.a',
+        accessor: (d) => d[n],
+      },
+      {
+        Header: 'col2.a.b',
+        accessor: 'col2.a.b',
+      },
+      {
+        Header: 'c3',
+        accessor: 'c3',
+      },
+    ],
+    []
+  )
+
+  const data = React.useMemo(
+    () => [
+      {
+        'TE-Layer_0-test calculator modes.esynGraph.txt': 'Hello',
+        'col2.a.b': 'World',
+        'c3': 1
+      },
+      {
+        'TE-Layer_0-test calculator modes.esynGraph.txt': 'react-table',
+        'col2.a.b': 'rocks',
+        'c3': 1
+      },
+      {
+        'TE-Layer_0-test calculator modes.esynGraph.txt': 'whatever',
+        'col2.a.b': 'you want',
+        'c3': 1
+      },
+    ],
+    []
+  )
+
+  return (
+    <>
+      <BatchTable columns={columns} data={data} />
+    </>
+  )
+}
+
 export class Workspace extends React.Component {
   constructor(props) {
     super(props);
@@ -2344,6 +2392,8 @@ export class Workspace extends React.Component {
       try {
         result = this.state.container.run(row) 
       } catch (error) {
+        console.log("container error running model")
+        console.log(error)
         result = {'meta': "Unknown model error"}
       }
       
@@ -2362,17 +2412,17 @@ export class Workspace extends React.Component {
     ]);
     const allVarNamesArray = [...allVarNames];
     let header = allVarNamesArray.map((name) => {
-      return {Header: name, accessor:  name,}
+      return {Header: name, accessor:  (d) => d[name]}
     })
     let part, n
     for (const [layer_name, units] of Object.entries(layers)) {
         part = Object.keys(units).map((unit_name) => {
           n = `TE-${layer_name}-${unit_name}`
-          return {Header: n, accessor: n,}
+          return {Header: n, accessor: n}
         })
         header = header.concat(part)
     }
-    header.push({Header: 'TE-meta-state', accessor: 'TE-meta-state',})
+    header.push({Header: 'TE-meta-state', accessor: (d) => d['TE-meta-state']})
     return header
   }
 
@@ -2381,10 +2431,10 @@ export class Workspace extends React.Component {
     let n
     res['TE-meta-state'] = result['meta']
     if(result['meta'] == 'OK'){
-      for (const [layer_name, unit_names] of Object.entries(result.result)) {
+      for (const [layer_name, unit_names] of Object.entries(result.states)) {
         for (const [unit_name, unit_res] of Object.entries(unit_names)) {
           n = `TE-${layer_name}-${unit_name}`
-          res[n] = unit_res
+          res[n] = unit_res.to_cell()
         }
       }
     }
@@ -2748,6 +2798,8 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
           <div className="col">
           <button type="button" className="btn btn-primary" onClick={() => this.fetch_models()}>Load dummy models to workspace</button>
+
+          <BatchTableViewTest></BatchTableViewTest>
           </div>
           </div>
           </div>
