@@ -150,7 +150,7 @@ export class Layer {
 		  }
 		}
 		this.state = states //results
-		return results
+		return {results: results, states:states}
 	}
 
 	handle_input(unit_name, all, scoped) {

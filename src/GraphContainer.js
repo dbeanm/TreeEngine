@@ -542,10 +542,12 @@ export class GraphContainer {
 
 	traverse_from(root_node, user_input, scoped_input){
 		let result = {}
+		let states = {}
 		//run the root node
 		let layer_r = this.layers[root_node.id()].run(user_input, scoped_input)
-		user_input = this.update_inputs(user_input, root_node.id(), layer_r)
-		result[root_node.id()] = layer_r
+		user_input = this.update_inputs(user_input, root_node.id(), layer_r.results)
+		result[root_node.id()] = layer_r.results
+		states[root_node.id()] = layer_r.states
 
 		//begin traversal
 		console.log("GraphContainer is running")
@@ -565,8 +567,9 @@ export class GraphContainer {
 			
 			//run the current node
 			let layer_r = this.layers[next_src].run(user_input, scoped_input)
-			user_input = this.update_inputs(user_input, next_src, layer_r)
-			result[next_src] = layer_r
+			user_input = this.update_inputs(user_input, next_src, layer_r.results)
+			result[next_src] = layer_r.results
+			states[root_node.id()] = layer_r.states
 
 			path_nodes.push(next_src)
 			path_edges = path_edges.concat(can_reach.reachable_ids[next_src])
@@ -580,6 +583,7 @@ export class GraphContainer {
 		let res = {reachable_ids:reachable_ids, next_node:next_node, path_nodes:path_nodes, path_edges:path_edges, path_missing: missing_per_step}
 		res['result'] = result
 		res['updated_input'] = user_input
+		res['states'] = states
 		return res
 	}
 
