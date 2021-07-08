@@ -8,6 +8,10 @@ import {GraphContainer} from './GraphContainer'
 import {ToolView} from './App';
 import reportWebVitals from './reportWebVitals';
 
+if (process.env.NODE_ENV === 'production'){
+  console.log = function(){}
+}
+
 // ReactDOM.render(
 //   <UnitView unit={new Unit('tree1', new DummyModel(['a']))}/>,
 //   document.getElementById('root')
