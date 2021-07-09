@@ -2412,17 +2412,17 @@ export class Workspace extends React.Component {
     ]);
     const allVarNamesArray = [...allVarNames];
     let header = allVarNamesArray.map((name) => {
-      return {Header: name, accessor:  (d) => d[name]}
+      return {Header: name, accessor:  (d) => d[name], id: name}
     })
     let part, n
     for (const [layer_name, units] of Object.entries(layers)) {
         part = Object.keys(units).map((unit_name) => {
           n = `TE-${layer_name}-${unit_name}`
-          return {Header: n, accessor: n}
+          return {Header: n, accessor: (d) => d[n], id: n}
         })
         header = header.concat(part)
     }
-    header.push({Header: 'TE-meta-state', accessor: (d) => d['TE-meta-state']})
+    header.push({Header: 'TE-meta-state', accessor: (d) => d['TE-meta-state'], id: 'TE-meta-state'})
     return header
   }
 
