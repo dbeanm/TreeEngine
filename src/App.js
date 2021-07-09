@@ -1891,53 +1891,6 @@ function BatchTableView({raw_columns, raw_data}) {
   )
 }
 
-function BatchTableViewTest() {
-  let n = 'TE-Layer_0-test calculator modes.esynGraph.txt'
-  const columns = React.useMemo(
-    () => [
-      {
-        Header: 'col1.a',
-        accessor: (d) => d[n],
-      },
-      {
-        Header: 'col2.a.b',
-        accessor: 'col2.a.b',
-      },
-      {
-        Header: 'c3',
-        accessor: 'c3',
-      },
-    ],
-    []
-  )
-
-  const data = React.useMemo(
-    () => [
-      {
-        'TE-Layer_0-test calculator modes.esynGraph.txt': 'Hello',
-        'col2.a.b': 'World',
-        'c3': 1
-      },
-      {
-        'TE-Layer_0-test calculator modes.esynGraph.txt': 'react-table',
-        'col2.a.b': 'rocks',
-        'c3': 1
-      },
-      {
-        'TE-Layer_0-test calculator modes.esynGraph.txt': 'whatever',
-        'col2.a.b': 'you want',
-        'c3': 1
-      },
-    ],
-    []
-  )
-
-  return (
-    <>
-      <BatchTable columns={columns} data={data} />
-    </>
-  )
-}
 
 export class Workspace extends React.Component {
   constructor(props) {
@@ -2799,7 +2752,6 @@ export class Workspace extends React.Component {
           <div className="col">
           <button type="button" className="btn btn-primary" onClick={() => this.fetch_models()}>Load dummy models to workspace</button>
 
-          <BatchTableViewTest></BatchTableViewTest>
           </div>
           </div>
           </div>
