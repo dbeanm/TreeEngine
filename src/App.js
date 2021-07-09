@@ -1400,7 +1400,7 @@ export class ContainerInputManualView extends React.Component {
  renderTableData() {
    let listItems = []
    let in_el, gr;
-   //TODO change this to use props.dt_ui_groups
+
    for (const [group, vs] of Object.entries(this.props.dt_ui_groups)){
       //label row
       gr = `___${group}___`
@@ -2611,7 +2611,12 @@ export class Workspace extends React.Component {
     const papaparseOptions = {
       header: true,
     }
-    
+
+    let all_user_input_values = {}
+    for (const [var_name, var_data] of Object.entries(this.state.user_input)) {
+      all_user_input_values[var_name] = var_data.value
+    }
+    let all_calc_results = this.state.container.get_value_of_calculators(all_user_input_values)
 
     return (
       <div className="container">
@@ -2957,7 +2962,7 @@ export class Workspace extends React.Component {
           <div className={hide}>
         <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange} 
         unit2input={this.state.container.unit2input}
-        variable2calculator={this.state.container.get_calculator_targets()}
+        variable2calculator={all_calc_results}
         dt_ui_groups={this.state.container.metadata.dt_ui_groups}
         
         ></ContainerInputManualView>

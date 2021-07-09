@@ -909,6 +909,31 @@ export class GraphContainer {
 	    return calculated
 	}
 
+	get_value_of_calculators(user_input){
+		//get the return value of each calculator by variable as a string, useful for UI
+		//output is {VARIABLE: [STRING]}
+		let rules = this.get_rules_by_type()
+		let calculated = {}
+		let r, do_then, set, cv, s
+		for (const calc of rules.set_val_rules) {
+			r = this.metadata.dt_rules[calc]
+			do_then = r.if(user_input)
+			set = r.then.set_variable
+			if(do_then == 1){
+				cv = r.then.fn(user_input)
+				s = `${calc}->${cv}`
+				if(calculated.hasOwnProperty(set)){
+					calculated[set].push(s)
+				} else {
+					calculated[set] = [s]
+				}
+				
+			}
+		}
+		return calculated
+	}
+
+
 	add_rule(rule){
 		let can_add = true
 		try {
