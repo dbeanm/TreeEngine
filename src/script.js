@@ -172,6 +172,7 @@ export class Unit {
 	run(input) {
 		//in a real tree run will contain the logic to run, the model itself will not have a run method
 		console.log(`${this.name} running with`, input)
+		console.log(`${this.name} running with`, JSON.stringify(input))
 		let result = this.model.run(input)
 		let result_converted = this.convert_output(result)
 		result.value = result_converted
