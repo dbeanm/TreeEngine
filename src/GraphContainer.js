@@ -34,6 +34,17 @@ export class GraphContainer {
 		this.unit2input = new ID2Name2D()
 	}
 
+	set_calculator_mode(mode){
+		const opts = ['always', 'missing', 'required', 'off']
+		if(opts.indexOf(mode) !== -1){
+			this.metadata.calculator_mode = mode
+			return true
+		} else {
+			console.log("calculator mode", mode,"not recognised, not changing input")
+			return false
+		}
+	}
+
 	update_graph_els(){
 		console.log("update graph eles for ui")
 		// console.log("setting graph els to", this.cy.json()['elements'])

@@ -1283,6 +1283,7 @@ export class VariableUIGroups extends React.Component {
 
     return (
       <div>
+        <h5>Create new variable group</h5>
         <form onSubmit={this.handleSubmit}>
   
         <div className="form-group row">
@@ -1952,6 +1953,15 @@ export class Workspace extends React.Component {
   }
   static defaultProps = {
     container: new GraphContainer()
+  }
+
+  set_container_calculator_mode(mode){
+    let c = this.state.container
+    let ok = c.set_calculator_mode(mode)
+    if(!ok){
+      alert('could not set mode to', mode)
+    }
+    this.setState({container: c})
   }
 
   updateInputObjectFromContainer(c, reset){
@@ -2866,6 +2876,16 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
             <div className="col">
               <h4>Settings</h4>
+              <h5>Calculator mode</h5>
+              <p>Decide how calculators should be used. This determines when calculated values can overwrite user-provided vales. 
+                The options are always overwrite, only replace missing values, replace missing values if required, and disable all calculators (i.e. off).
+                This setting only applies to the top level TreeEngine model, not to any esyn models it contains.</p>
+              <select value={this.state.container.metadata.calculator_mode} onChange={(e) => this.set_container_calculator_mode(e.target.value)}>
+                <option value="missing">Replace missing</option>
+                <option value="required">Replace missing if required</option>
+                <option value="always">Always replace</option>
+                <option value="off">Disable</option>
+              </select>
               <VariableUIGroups 
                 groups={this.state.container.metadata.dt_ui_groups}
                 handleGroupAdded={this.handleUIGroupAdded}
