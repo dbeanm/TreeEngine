@@ -1,5 +1,7 @@
 import React from 'react';
 import {Unit, Layer, DummyModel, EsynDecisionTree, ModelState} from './script.js';
+import { HaemTreatmentExtractor } from './plugins/HaemTreatmentExtractor.js';
+import { CytogeneticsExtractor } from './plugins/CytogeneticsExtractor.js';
 import { GraphContainer } from './GraphContainer.js';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from "cytoscape";
@@ -1497,6 +1499,8 @@ export class ContainerInputManualView extends React.Component {
   render() {    
     return (
       <div>
+        <HaemTreatmentExtractor></HaemTreatmentExtractor>
+        <CytogeneticsExtractor></CytogeneticsExtractor>
             <table id='model-input' className="model-input-table table">
                <tbody>
                   <tr>{this.renderTableHeader()}</tr>
@@ -2886,6 +2890,16 @@ export class Workspace extends React.Component {
                 <option value="always">Always replace</option>
                 <option value="off">Disable</option>
               </select>
+
+              <h5>Plugins</h5>
+              <p>Plugins extend the functionality of TreeEngine with domain-specific features. Select plugins from the list below to enable them.</p>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
+                <label className="form-check-label" for="flexCheckDefault">
+                  Haematology treatment extractor
+                </label>
+              </div>
+              
               <VariableUIGroups 
                 groups={this.state.container.metadata.dt_ui_groups}
                 handleGroupAdded={this.handleUIGroupAdded}
