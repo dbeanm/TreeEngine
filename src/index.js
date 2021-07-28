@@ -62,7 +62,7 @@ let c = new GraphContainer()
 // c.add_edge('L1', 'L2', [])
 
 ReactDOM.render(
-  <ToolView container={c}/>,
+  <ToolView container={c} available_plugins={['HaemTreatmentExtractor', 'CytogeneticsExtractor']}/>,
   document.getElementById('root4')
 );
 

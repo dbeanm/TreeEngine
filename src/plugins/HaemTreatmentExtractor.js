@@ -136,8 +136,10 @@ export class HaemTreatmentExtractor extends React.Component {
   }
 
   render() {
+    let hide = this.props.enabled ? "" : "hidden"
+    
     return (
-      <div>
+      <div className={hide}>
       <p>Treatment extractor</p>
       <table id="treatmentgrid" className="table">
 		<tr><th>Line</th>

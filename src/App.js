@@ -1,7 +1,8 @@
 import React from 'react';
 import {Unit, Layer, DummyModel, EsynDecisionTree, ModelState} from './script.js';
-import { HaemTreatmentExtractor } from './plugins/HaemTreatmentExtractor.js';
+import { HaemTreatmentExtractor} from './plugins/HaemTreatmentExtractor.js';
 import { CytogeneticsExtractor } from './plugins/CytogeneticsExtractor.js';
+import { PluginConfig } from './plugins/config.js'
 import { GraphContainer } from './GraphContainer.js';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from "cytoscape";
@@ -1499,8 +1500,6 @@ export class ContainerInputManualView extends React.Component {
   render() {    
     return (
       <div>
-        <HaemTreatmentExtractor></HaemTreatmentExtractor>
-        <CytogeneticsExtractor></CytogeneticsExtractor>
             <table id='model-input' className="model-input-table table">
                <tbody>
                   <tr>{this.renderTableHeader()}</tr>
@@ -1908,6 +1907,13 @@ export class Workspace extends React.Component {
       all_inputs[key] = Object.assign({ 'value':''}, this.props.container.inputs.usable[key])
     }
 
+    let plugin_conf = {}
+    for (const plugin of this.props.available_plugins) {
+      if(PluginConfig.hasOwnProperty(plugin)){
+        plugin_conf[plugin] = PluginConfig[plugin]
+      }
+    }
+
     // const all_layers = Object.keys(this.props.container.layers)
     // let all_results = {}
     // for (const key of all_layers) {
@@ -1925,7 +1931,9 @@ export class Workspace extends React.Component {
       esyn_token: '',
       esyn_project_grps: [],
       batch_dataset: [],
-      batch_header: []
+      batch_header: [],
+      masked_by_plugin: [],
+      plugin_conf: plugin_conf
     }
     //this.container = this.props.container
 
@@ -1954,9 +1962,17 @@ export class Workspace extends React.Component {
     this.handleUIGroupUpdate = this.handleUIGroupUpdate.bind(this);
     this.updateInputObjectFromContainer = this.updateInputObjectFromContainer.bind(this);
     this.reset_inputs = this.reset_inputs.bind(this);
+    this.set_plugin = this.set_plugin.bind(this);
   }
   static defaultProps = {
     container: new GraphContainer()
+  }
+
+  set_plugin(plugin_name, enabled){
+    //set whether a plugin is enabled
+    let conf = this.state.plugin_conf
+    conf[plugin_name].enabled = enabled
+    this.setState({plugin_conf: conf})
   }
 
   set_container_calculator_mode(mode){
@@ -2581,6 +2597,7 @@ export class Workspace extends React.Component {
     } else {
       input_badge = <span className="badge badge-success">Ready</span>
     }
+
     const project_name = this.state.container.name
     const n_available_units = Object.keys(this.state.available_units).length
     const current_layers_opts = Object.keys(this.state.container.layers).map((x) => <option key={x}>{x}</option>)
@@ -2894,11 +2911,18 @@ export class Workspace extends React.Component {
               <h5>Plugins</h5>
               <p>Plugins extend the functionality of TreeEngine with domain-specific features. Select plugins from the list below to enable them.</p>
               <div className="form-check">
-                <input className="form-check-input" type="checkbox" value="" id="flexCheckDefault"></input>
-                <label className="form-check-label" for="flexCheckDefault">
+                <input className="form-check-input" type="checkbox" id="pl_enable_tex" name="HaemTreatmentExtractor" defaultChecked={this.state.plugin_conf.HaemTreatmentExtractor.enabled} onChange={(e) => this.set_plugin(e.target.name, e.target.checked)}></input>
+                <label className="form-check-label" htmlFor="pl_enable_tex">
                   Haematology treatment extractor
                 </label>
               </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" id="pl_enable_cyx" name="CytogeneticsExtractor" defaultChecked={this.state.plugin_conf.CytogeneticsExtractor.enabled} onChange={(e) => this.set_plugin(e.target.name, e.target.checked)}></input>
+                <label className="form-check-label" htmlFor="pl_enable_cyx">
+                  Haematology cytogenetics extractor
+                </label>
+              </div>
+
               
               <VariableUIGroups 
                 groups={this.state.container.metadata.dt_ui_groups}
@@ -2994,6 +3018,8 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
           <div className="col">
           <div className={hide}>
+          <HaemTreatmentExtractor enabled={this.state.plugin_conf.HaemTreatmentExtractor.enabled}></HaemTreatmentExtractor>
+          <CytogeneticsExtractor enabled={this.state.plugin_conf.CytogeneticsExtractor.enabled}></CytogeneticsExtractor>
         <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange} 
         unit2input={this.state.container.unit2input}
         variable2calculator={all_calc_results}
@@ -3045,7 +3071,7 @@ export class ToolView extends React.Component {
         </ul>
       </div>
     </nav>
-    <Workspace container={this.props.container}></Workspace>
+    <Workspace container={this.props.container} available_plugins={this.props.available_plugins}></Workspace>
 
     <div className='row mt-1'>
       <div className='col'>

@@ -6,8 +6,10 @@ export class CytogeneticsExtractor extends React.Component {
   }
 
   render() {
+    let hide = this.props.enabled ? "" : "hidden"
+
     return (
-      <div>
+      <div className={hide}>
       <p>Cytogenetics extractor</p>
       </div>
     );
