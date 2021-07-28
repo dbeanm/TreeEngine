@@ -1425,6 +1425,7 @@ export class ContainerInputManualView extends React.Component {
           const set_by = this.props.unit2input.get_variable_str(name)
           let calc_by = this.props.variable2calculator[name] === undefined ?  [] : this.props.variable2calculator[name]
           const calculated_by = calc_by.join(', ')
+          const disabled = this.props.masked.indexOf(key) !== -1 ? "disabled" : ""
           //console.log('creating input el for ',name, type, value)
           let badge
           if(state == "warn"){
@@ -1433,7 +1434,7 @@ export class ContainerInputManualView extends React.Component {
            badge = <span></span>
           }
          if(type == "num"){
-             in_el = <input type="number" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
+             in_el = <input type="number" name={name} value={value} className="form-check-input" onChange={this.handleChange} disabled={disabled}/>
          } else if(type == 'bool'){
              in_el = (<div>
                <div className="form-check">
@@ -1445,6 +1446,7 @@ export class ContainerInputManualView extends React.Component {
                  checked={value === "True"}
                  className="form-check-input"
                  onChange={this.handleChange} 
+                 disabled={disabled}
                />
                <label htmlFor={id_true} className="form-check-label">
                True
@@ -1460,6 +1462,7 @@ export class ContainerInputManualView extends React.Component {
                checked={value === "False"}
                className="form-check-input"
                onChange={this.handleChange} 
+               disabled={disabled}
              />
              <label htmlFor={id_false} className="form-check-label">
              False
@@ -1475,6 +1478,7 @@ export class ContainerInputManualView extends React.Component {
              checked={value === ""}
              className="form-check-input"
              onChange={this.handleChange} 
+             disabled={disabled}
            />
            <label htmlFor={id_unknown} className="form-check-label">
            Unknown
@@ -1482,7 +1486,7 @@ export class ContainerInputManualView extends React.Component {
          </div>
          </div>)
          } else {
-             in_el = <input type="text" name={name} value={value} className="form-check-input" onChange={this.handleChange} />
+             in_el = <input type="text" name={name} value={value} className="form-check-input" onChange={this.handleChange} disabled={disabled}/>
          }
          listItems.push(<tr key={name}>
            <td>{name}{badge}</td>
@@ -1907,12 +1911,16 @@ export class Workspace extends React.Component {
       all_inputs[key] = Object.assign({ 'value':''}, this.props.container.inputs.usable[key])
     }
 
-    let plugin_conf = {}
+    let plugin_conf = {}, mask = []
     for (const plugin of this.props.available_plugins) {
       if(PluginConfig.hasOwnProperty(plugin)){
         plugin_conf[plugin] = PluginConfig[plugin]
+        mask = mask.concat(PluginConfig[plugin].masks)
       }
     }
+    mask = mask.filter(function(elem, index, self) {
+      return self.indexOf(elem) === index;
+    });
 
     // const all_layers = Object.keys(this.props.container.layers)
     // let all_results = {}
@@ -1932,7 +1940,7 @@ export class Workspace extends React.Component {
       esyn_project_grps: [],
       batch_dataset: [],
       batch_header: [],
-      masked_by_plugin: [],
+      masked_by_plugin: mask,
       plugin_conf: plugin_conf
     }
     //this.container = this.props.container
@@ -1972,7 +1980,18 @@ export class Workspace extends React.Component {
     //set whether a plugin is enabled
     let conf = this.state.plugin_conf
     conf[plugin_name].enabled = enabled
-    this.setState({plugin_conf: conf})
+    //update list of masked inputs
+    let mask = []
+    for (const [pl, pl_conf] of Object.entries(conf)) {
+      if(pl_conf.enabled){
+        mask = mask.concat(pl_conf.masks)
+      }
+    }
+    mask = mask.filter(function(elem, index, self) {
+      return self.indexOf(elem) === index;
+    });
+
+    this.setState({plugin_conf: conf, masked_by_plugin: mask})
   }
 
   set_container_calculator_mode(mode){
@@ -1987,6 +2006,8 @@ export class Workspace extends React.Component {
   updateInputObjectFromContainer(c, reset){
     //could add a new mode to keep old values if the variable still exists, otherwise reset
     //so that when a unit is deleted the current values for remaining variables aren't lost
+    //find masked inputs
+
     let all_inputs
     if(reset){
       console.log("UI resetting user input")
@@ -3024,7 +3045,7 @@ export class Workspace extends React.Component {
         unit2input={this.state.container.unit2input}
         variable2calculator={all_calc_results}
         dt_ui_groups={this.state.container.metadata.dt_ui_groups}
-        
+        masked={this.state.masked_by_plugin}
         ></ContainerInputManualView>
         </div>
           </div>

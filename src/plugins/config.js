@@ -35,9 +35,9 @@ const PluginConfig = {
 	},
 
 	CytogeneticsExtractor: {
-		masks: [],
-		display_name: "",
-		enabled: false
+		masks: ["Number of cytogenetic abnormalities"],
+		display_name: "Cytogenetics extractor",
+		enabled: true
 	}
 }
 
