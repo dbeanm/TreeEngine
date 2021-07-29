@@ -2001,11 +2001,16 @@ export class Workspace extends React.Component {
   handleUpdateFromPlugin(update){
     //update = {'input': value, 'output': new_result, 'plugin': this.props.plugin_name}
     console.log("got", update.output, "from plugin", update.plugin)
+
     //check this plugin has a config
+    if(!this.state.plugin_conf.hasOwnProperty(update.plugin)){
+      throw "plugin is not configured"
+    }
 
-    //check this plugin is enabled in config
-
-    //check this plugin is enabled by user
+    //check this plugin is enabled
+    if(!this.state.plugin_conf[update.plugin].enabled){
+      throw "plugin is not enabled"
+    }
 
     //check what this plugin can mask
     const allowed = this.state.plugin_conf[update.plugin].masks
