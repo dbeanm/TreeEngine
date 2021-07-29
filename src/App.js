@@ -1974,6 +1974,7 @@ export class Workspace extends React.Component {
     this.updateInputObjectFromContainer = this.updateInputObjectFromContainer.bind(this);
     this.reset_inputs = this.reset_inputs.bind(this);
     this.set_plugin = this.set_plugin.bind(this);
+    this.handleUpdateFromPlugin = this.handleUpdateFromPlugin.bind(this);
   }
   static defaultProps = {
     container: new GraphContainer()
@@ -1995,6 +1996,31 @@ export class Workspace extends React.Component {
     });
 
     this.setState({plugin_conf: conf, masked_by_plugin: mask})
+  }
+
+  handleUpdateFromPlugin(update){
+    //update = {'input': value, 'output': new_result, 'plugin': this.props.plugin_name}
+    console.log("got", update.output, "from plugin", update.plugin)
+    //check this plugin has a config
+
+    //check this plugin is enabled in config
+
+    //check this plugin is enabled by user
+
+    //check what this plugin can mask
+    const allowed = this.state.plugin_conf[update.plugin].masks
+
+    //apply output from plugin to masked variables
+    let user_input = this.state.user_input
+    for (const [variable, value] of Object.entries(update.output)) {
+      if(allowed.includes(variable)){
+        user_input[variable]['value'] = value
+      }
+    }
+
+    //update state
+    this.setState({user_input: user_input})
+
   }
 
   set_container_calculator_mode(mode){
@@ -3048,9 +3074,9 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
           <div className="col">
           <div className={hide}>
-          <HaemTreatmentExtractor enabled={this.state.plugin_conf.HaemTreatmentExtractor.enabled}></HaemTreatmentExtractor>
-          <CytogeneticsExtractor enabled={this.state.plugin_conf.CytogeneticsExtractor.enabled}></CytogeneticsExtractor>
-          <DummyExtractor enabled={this.state.plugin_conf.DummyExtractor.enabled}></DummyExtractor>
+          <HaemTreatmentExtractor enabled={this.state.plugin_conf.HaemTreatmentExtractor.enabled} plugin_name="HaemTreatmentExtractor" onChange={this.handleUpdateFromPlugin}></HaemTreatmentExtractor>
+          <CytogeneticsExtractor enabled={this.state.plugin_conf.CytogeneticsExtractor.enabled} plugin_name="CytogeneticsExtractor" onChange={this.handleUpdateFromPlugin}></CytogeneticsExtractor>
+          <DummyExtractor enabled={this.state.plugin_conf.DummyExtractor.enabled} plugin_name="DummyExtractor" onChange={this.handleUpdateFromPlugin}></DummyExtractor>
         <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange} 
         unit2input={this.state.container.unit2input}
         variable2calculator={all_calc_results}
