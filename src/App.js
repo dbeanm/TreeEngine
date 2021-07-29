@@ -2,6 +2,7 @@ import React from 'react';
 import {Unit, Layer, DummyModel, EsynDecisionTree, ModelState} from './script.js';
 import { HaemTreatmentExtractor} from './plugins/HaemTreatmentExtractor.js';
 import { CytogeneticsExtractor } from './plugins/CytogeneticsExtractor.js';
+import { DummyExtractor } from './plugins/DummyExtractor.js';
 import { PluginConfig } from './plugins/config.js'
 import { GraphContainer } from './GraphContainer.js';
 import CytoscapeComponent from 'react-cytoscapejs';
@@ -1915,7 +1916,9 @@ export class Workspace extends React.Component {
     for (const plugin of this.props.available_plugins) {
       if(PluginConfig.hasOwnProperty(plugin)){
         plugin_conf[plugin] = PluginConfig[plugin]
-        mask = mask.concat(PluginConfig[plugin].masks)
+        if(plugin_conf[plugin].enabled){
+          mask = mask.concat(plugin_conf[plugin].masks)
+        }
       }
     }
     mask = mask.filter(function(elem, index, self) {
@@ -2943,6 +2946,12 @@ export class Workspace extends React.Component {
                   Haematology cytogenetics extractor
                 </label>
               </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" id="pl_enable_dum" name="DummyExtractor" defaultChecked={this.state.plugin_conf.DummyExtractor.enabled} onChange={(e) => this.set_plugin(e.target.name, e.target.checked)}></input>
+                <label className="form-check-label" htmlFor="pl_enable_dum">
+                  Dummy - test
+                </label>
+              </div>
 
               
               <VariableUIGroups 
@@ -3041,6 +3050,7 @@ export class Workspace extends React.Component {
           <div className={hide}>
           <HaemTreatmentExtractor enabled={this.state.plugin_conf.HaemTreatmentExtractor.enabled}></HaemTreatmentExtractor>
           <CytogeneticsExtractor enabled={this.state.plugin_conf.CytogeneticsExtractor.enabled}></CytogeneticsExtractor>
+          <DummyExtractor enabled={this.state.plugin_conf.DummyExtractor.enabled}></DummyExtractor>
         <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange} 
         unit2input={this.state.container.unit2input}
         variable2calculator={all_calc_results}
