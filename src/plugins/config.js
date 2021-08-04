@@ -31,19 +31,22 @@ const PluginConfig = {
 		'Response to last treatment',
 		'Time from Prior Bortezomib less 6 months'],
 		display_name: "Haematology treatment extractor",
-		enabled: false
+		enabled: false,
+		host: "http://treatmentplugin/" //"http://localhost:5000/"
 	},
 
 	CytogeneticsExtractor: {
 		masks: ["Number of cytogenetic abnormalities"],
 		display_name: "Cytogenetics extractor",
-		enabled: false
+		enabled: false,
+		host: "http://cytogeneticsplugin/"
 	},
 
 	DummyExtractor: {
 		masks: ["Number of cytogenetic abnormalities", "Lines of therapy"],
 		display_name: "Dummy extractor",
-		enabled: true
+		enabled: true,
+		host: ""
 	}
 }
 

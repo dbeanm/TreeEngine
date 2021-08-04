@@ -3079,9 +3079,9 @@ export class Workspace extends React.Component {
           <div className="row mt-1">
           <div className="col">
           <div className={hide}>
-          <HaemTreatmentExtractor enabled={this.state.plugin_conf.HaemTreatmentExtractor.enabled} plugin_name="HaemTreatmentExtractor" onChange={this.handleUpdateFromPlugin}></HaemTreatmentExtractor>
-          <CytogeneticsExtractor enabled={this.state.plugin_conf.CytogeneticsExtractor.enabled} plugin_name="CytogeneticsExtractor" onChange={this.handleUpdateFromPlugin}></CytogeneticsExtractor>
-          <DummyExtractor enabled={this.state.plugin_conf.DummyExtractor.enabled} plugin_name="DummyExtractor" onChange={this.handleUpdateFromPlugin}></DummyExtractor>
+          <HaemTreatmentExtractor enabled={this.state.plugin_conf.HaemTreatmentExtractor.enabled} host={this.state.plugin_conf.HaemTreatmentExtractor.host} plugin_name="HaemTreatmentExtractor" onChange={this.handleUpdateFromPlugin}></HaemTreatmentExtractor>
+          <CytogeneticsExtractor enabled={this.state.plugin_conf.CytogeneticsExtractor.enabled} host={this.state.plugin_conf.CytogeneticsExtractor.host} plugin_name="CytogeneticsExtractor" onChange={this.handleUpdateFromPlugin}></CytogeneticsExtractor>
+          <DummyExtractor enabled={this.state.plugin_conf.DummyExtractor.enabled} host={this.state.plugin_conf.DummyExtractor.host} plugin_name="DummyExtractor" onChange={this.handleUpdateFromPlugin}></DummyExtractor>
         <ContainerInputManualView inputs={this.state.user_input} onChange={this.handleFieldChange} 
         unit2input={this.state.container.unit2input}
         variable2calculator={all_calc_results}

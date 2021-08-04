@@ -8,7 +8,7 @@ export class HaemTreatmentExtractor extends React.Component {
 
   test() {
 
-    fetch("http://localhost:5000/treatmentgrid/ping", { method: 'post', mode: 'cors', headers: {'Content-Type': 'application/json'},
+    fetch(`${this.props.host}treatmentgrid/ping`, { method: 'post', mode: 'cors', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({id:10})})
       .then(res => res.json())
       .then(
@@ -27,7 +27,7 @@ export class HaemTreatmentExtractor extends React.Component {
 
   get_treatments(){
     ///treatmentgrid/get/treatments
-    fetch("http://localhost:5000/treatmentgrid/get/treatments", { method: 'post', mode: 'cors', headers: {'Content-Type': 'application/json'}})
+    fetch(`${this.props.host}treatmentgrid/get/treatments`, { method: 'post', mode: 'cors', headers: {'Content-Type': 'application/json'}})
       .then(res => res.json())
       .then(
         (result) => {
@@ -43,7 +43,7 @@ export class HaemTreatmentExtractor extends React.Component {
   }
 
   extract(){
-    const url = "http://localhost:5000/treatmentgrid/extract";
+    const url = `${this.props.host}treatmentgrid/extract`;
     const data = this.getData()
     console.log("submitted grid:", data)
     fetch(url, {method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'}}).then(function(response) {
