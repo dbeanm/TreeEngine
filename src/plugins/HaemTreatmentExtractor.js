@@ -115,7 +115,7 @@ export class HaemTreatmentExtractor extends React.Component {
 
   add_row(){
     
-    let table=document.getElementById("treatmentgrid")
+    let table=document.getElementById("treatmentgrid").getElementsByTagName('tbody')[0];
     let row = table.insertRow(-1)
     let pos = 0
     let line = row.insertCell(pos) 
@@ -168,6 +168,13 @@ export class HaemTreatmentExtractor extends React.Component {
 
   }
 
+  reset(){
+    let table=document.getElementById("treatmentgrid").getElementsByTagName('tbody')[0];
+    table.innerHTML = ""
+    this.props.onChange({'plugin': this.props.plugin_name}) //intentionally undefined
+    this.setState({error: false, message: ""})
+  }
+
   render() {
     let hide = this.props.enabled ? "" : "hidden"
     
@@ -177,6 +184,7 @@ export class HaemTreatmentExtractor extends React.Component {
   <h5 className="card-header">Treatment extractor</h5>
   <div className="card-body">
   <table id="treatmentgrid" className="table">
+    <thead>
 		<tr><th>Line</th>
 			<th>Treatment</th>
 			<th>Start</th>
@@ -185,11 +193,14 @@ export class HaemTreatmentExtractor extends React.Component {
 			<th>Relapse</th>
 			<th>Relapse date</th>
 		</tr>
+    </thead>
+    <tbody></tbody>
 
 
     </table>
       <button onClick={() => this.add_row()}>Add Line</button>
       <button onClick={() => this.extract()}>Extract</button>
+      <button onClick={() => this.reset()}>Reset</button>
       <button onClick={() => this.test()}>Test ping</button>
       <button onClick={() => this.get_treatments()}>Test treatments</button>
       <p>{this.state.error_message}</p>
