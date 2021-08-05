@@ -192,6 +192,7 @@ export class HaemTreatmentExtractor extends React.Component {
       <button onClick={() => this.extract()}>Extract</button>
       <button onClick={() => this.test()}>Test ping</button>
       <button onClick={() => this.get_treatments()}>Test treatments</button>
+      <p>{this.state.error_message}</p>
   </div>
   <div class="card-footer text-muted">
     This content is provided by the plugin HaemTreatmentExtractor@v0.0.1
