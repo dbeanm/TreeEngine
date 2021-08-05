@@ -1998,12 +1998,6 @@ export class Workspace extends React.Component {
     this.setState({plugin_conf: conf, masked_by_plugin: mask})
   }
 
-  resetForPlugin(plugin){
-    let c = this.state.container
-    let all_inputs = this.updateInputObjectFromContainer(c, true)
-  
-    this.setState({user_input: all_inputs})
-  }
 
   handleUpdateFromPlugin(update){
     //update = {'input': value, 'output': new_result, 'plugin': this.props.plugin_name}
