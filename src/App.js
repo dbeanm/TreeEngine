@@ -2055,9 +2055,14 @@ export class Workspace extends React.Component {
     //find masked inputs
 
     let all_inputs
+    let exists = Object.keys(this.state.user_input)
+    let masked = this.state.masked_by_plugin.filter(el => exists.includes(el))
+
     if(reset){
       console.log("UI resetting user input")
+      //only replace values not controlled by a plugin
       all_inputs = {}
+      masked.forEach(variable => all_inputs[variable] = this.state.user_input[variable])
     } else {
       console.log("UI merging user input")
       all_inputs = this.state.user_input
