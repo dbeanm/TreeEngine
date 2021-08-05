@@ -61,21 +61,35 @@ export class CytogeneticsExtractor extends React.Component {
 	  this.props.onChange(update)
   }
 
+  reset(){
+    document.getElementById('cyex_karyotype_str').value = ""
+    this.props.onChange({'plugin': this.props.plugin_name}) //intentionally undefined
+    this.setState({error: false, message: ""})
+  }
+
   render() {
     let hide = this.props.enabled ? "" : "hidden"
 
     return (
-      <div className={hide}>
-      <h5>Cytogenetics extractor</h5>
-
-      <div className="form-group row">
+<div className={hide}>
+      <div class="card">
+  <h5 class="card-header">Cytogenetics extractor</h5>
+  <div class="card-body">
+  <div className="form-group row">
           <label htmlFor="cyex_karyotype_str" className="col-sm-2 col-form-label">Karyotype:</label>
           <div className="col-sm-10">
           <input id="cyex_karyotype_str" type='text' className="form-control edit-text" placeholder="Karyotype string" onChange={(e) => this.extract(e.target.value)}></input>
           </div>
           </div>
       <button onClick={() => this.test()}>Ping</button>
+      <button onClick={() => this.reset()}>Reset</button>
       <p>{this.state.message}</p>
+  </div>
+  <div class="card-footer text-muted">
+    This content is provided by the plugin CytogeneticsExtractor@v0.0.1
+  </div>
+</div>
+      
       </div>
     );
   }
