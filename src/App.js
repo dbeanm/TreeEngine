@@ -1999,17 +1999,15 @@ export class Workspace extends React.Component {
   }
 
   resetForPlugin(plugin){
-    
+    let c = this.state.container
+    let all_inputs = this.updateInputObjectFromContainer(c, true)
+  
+    this.setState({user_input: all_inputs})
   }
 
   handleUpdateFromPlugin(update){
     //update = {'input': value, 'output': new_result, 'plugin': this.props.plugin_name}
     console.log("got", update.output, "from plugin", update.plugin)
-
-    //check update.output is not undefined
-    if(update.output === undefined){
-      throw "error with external plugin server"
-    }
 
     //check this plugin has a config
     if(!this.state.plugin_conf.hasOwnProperty(update.plugin)){
@@ -2023,6 +2021,17 @@ export class Workspace extends React.Component {
 
     //check what this plugin can mask
     const allowed = this.state.plugin_conf[update.plugin].masks
+
+    //check update.output is not undefined
+    //handle here so that we know there is an available `masks` array to use creating defaults
+    if(update.output === undefined){
+      update.output = {}
+      for (const variable of allowed) {
+        //this won't work if the default value ever depends on the variable type
+        update.output[variable] = ""
+      }
+      // throw "error with external plugin server"
+    }
 
     //apply output from plugin to masked variables that exist in the model
     let user_input = this.state.user_input
