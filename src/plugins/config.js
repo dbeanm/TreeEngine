@@ -39,7 +39,7 @@ const PluginConfig = {
 		masks: ["Number of cytogenetic abnormalities"],
 		display_name: "Cytogenetics extractor",
 		enabled: false,
-		host: "http://cytogeneticsplugin:5000/"
+		host: `http://${window.location.hostname}:5002/`
 	},
 
 	DummyExtractor: {
