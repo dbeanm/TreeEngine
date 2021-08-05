@@ -73,8 +73,8 @@ export class CytogeneticsExtractor extends React.Component {
     return (
 <div className={hide}>
       <div class="card">
-  <h5 class="card-header">Cytogenetics extractor</h5>
-  <div class="card-body">
+  <h5 className="card-header">Cytogenetics extractor</h5>
+  <div className="card-body">
   <div className="form-group row">
           <label htmlFor="cyex_karyotype_str" className="col-sm-2 col-form-label">Karyotype:</label>
           <div className="col-sm-10">
@@ -85,7 +85,7 @@ export class CytogeneticsExtractor extends React.Component {
       <button onClick={() => this.reset()}>Reset</button>
       <p>{this.state.message}</p>
   </div>
-  <div class="card-footer text-muted">
+  <div className="card-footer text-muted">
     This content is provided by the plugin CytogeneticsExtractor@v0.0.1
   </div>
 </div>

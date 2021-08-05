@@ -173,9 +173,9 @@ export class HaemTreatmentExtractor extends React.Component {
     
     return (
 <div className={hide}>
-<div class="card">
-  <h5 class="card-header">Treatment extractor</h5>
-  <div class="card-body">
+<div className="card">
+  <h5 className="card-header">Treatment extractor</h5>
+  <div className="card-body">
   <table id="treatmentgrid" className="table">
 		<tr><th>Line</th>
 			<th>Treatment</th>
@@ -194,7 +194,7 @@ export class HaemTreatmentExtractor extends React.Component {
       <button onClick={() => this.get_treatments()}>Test treatments</button>
       <p>{this.state.error_message}</p>
   </div>
-  <div class="card-footer text-muted">
+  <div className="card-footer text-muted">
     This content is provided by the plugin HaemTreatmentExtractor@v0.0.1
   </div>
 </div>
