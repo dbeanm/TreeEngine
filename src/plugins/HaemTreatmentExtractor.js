@@ -4,6 +4,14 @@ import { useTable, usePagination } from 'react-table'
 export class HaemTreatmentExtractor extends React.Component {
   constructor(props) {
     super(props);
+
+    this.state = {
+      error: false,
+      message: ''
+    }
+
+    this.extract = this.extract.bind(this);
+    this.update = this.update.bind(this);
   }
 
   test() {
@@ -42,6 +50,21 @@ export class HaemTreatmentExtractor extends React.Component {
     )
   }
 
+  update(input, new_result){
+    let error_state, error_msg
+    if(typeof new_result !== 'object' || new_result === undefined){
+      error_state = true
+      error_msg = "Error with external plugin server"      
+    } else {
+      error_state = new_result.error
+      error_msg = new_result.error_message
+    }
+    let update = {'input': input, 'output': new_result.result, 'plugin': this.props.plugin_name}
+    this.setState({error: error_state, message: error_msg})
+    this.props.onChange(update)
+  
+  }
+
   extract(){
     const url = `${this.props.host}treatmentgrid/extract`;
     const data = this.getData()
@@ -51,6 +74,16 @@ export class HaemTreatmentExtractor extends React.Component {
         console.log(res)
       });
     });
+
+    fetch(url, {method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'}}).then((response) => response.json()).
+      then((new_result) => {
+        console.log(new_result)
+        this.update(data, new_result)
+      },
+      (error) => {
+        console.log(error)
+        this.update(data, {error: true, error_message: "external plugin returned invalid response"})
+      });
   }
 
   getData(){
@@ -139,9 +172,11 @@ export class HaemTreatmentExtractor extends React.Component {
     let hide = this.props.enabled ? "" : "hidden"
     
     return (
-      <div className={hide}>
-      <p>Treatment extractor</p>
-      <table id="treatmentgrid" className="table">
+<div className={hide}>
+<div class="card">
+  <h5 class="card-header">Treatment extractor</h5>
+  <div class="card-body">
+  <table id="treatmentgrid" className="table">
 		<tr><th>Line</th>
 			<th>Treatment</th>
 			<th>Start</th>
@@ -152,11 +187,19 @@ export class HaemTreatmentExtractor extends React.Component {
 		</tr>
 
 
-	</table>
-	<button onClick={() => this.add_row()}>Add Line</button>
-	<button onClick={() => this.extract()}>Extract</button>
+    </table>
+      <button onClick={() => this.add_row()}>Add Line</button>
+      <button onClick={() => this.extract()}>Extract</button>
       <button onClick={() => this.test()}>Test ping</button>
       <button onClick={() => this.get_treatments()}>Test treatments</button>
+  </div>
+  <div class="card-footer text-muted">
+    This content is provided by the plugin HaemTreatmentExtractor@v0.0.1
+  </div>
+</div>
+
+      
+      
       </div>
     );
   }
