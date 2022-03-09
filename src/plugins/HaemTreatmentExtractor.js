@@ -107,6 +107,7 @@ export class HaemTreatmentExtractor extends React.Component {
         
       }
       if(Object.keys(r).length !== 0){
+        r['cycles'] = parseInt(r['cycles'])
         d.push(r)
       }
     }
@@ -127,9 +128,20 @@ export class HaemTreatmentExtractor extends React.Component {
     let treatment = row.insertCell(pos)
     treatment.innerHTML = `
       <select name="regimen" multiple>
-        <option value="?">?</option><option value="Carfilzomib">Carfilzomib</option><option value="Cisplatin">Cisplatin</option><option value="Cyclophosphamide">Cyclophosphamide</option><option value="Daratumamab">Daratumamab</option><option value="Dexamethasone">Dexamethasone</option><option value="Doxorubicin">Doxorubicin</option><option value="Etoposide">Etoposide</option><option value="Ixazomib">Ixazomib</option><option value="Lenalidomide">Lenalidomide</option><option value="Melphalan">Melphalan</option><option value="Melphalan_HD">Melphalan_HD</option><option value="Panobinostat">Panobinostat</option><option value="Pomalidomide">Pomalidomide</option><option value="Predinosolone">Predinosolone</option><option value="Thalidomide">Thalidomide</option><option value="Velcade">Velcade</option><option value="Vorinostat">Vorinostat</option><option value="Bendamastine">Bendamastine</option><option value="Idarubicin">Idarubicin</option><option value="Cytaribine">Cytaribine</option><option value="Imid - other">Imid - other</option><option value="PI - other">PI - other</option><option value="Alk - other">Alk - other</option><option value="Top - other">Top - other</option><option value="CD38 - other">CD38 - other</option><option value="HDAC - other">HDAC - other</option><option value="Steroid - other">Steroid - other</option>
-        <option value="VTD">VTD</option><option value="HD Melphalan">HD Melphalan</option><option value="RCD">RCD</option><option value="Daratumamab">Daratumamab</option><option value="PBD">PBD</option><option value="DT_PACE">DT_PACE</option><option value="CTDa">CTDa</option><option value="VCDa">VCDa</option><option value="Main Len">Main Len</option><option value="MUK4">MUK4</option><option value="Main Vorinostat">Main Vorinostat</option><option value="Myeloma XI _ RCDa">Myeloma XI _ RCDa</option><option value="Pom_Dex">Pom_Dex</option><option value="MUK5">MUK5</option><option value="DVD">DVD</option><option value="CTD">CTD</option><option value="Myeloma XI _ CTD">Myeloma XI _ CTD</option><option value="Car_Dex">Car_Dex</option><option value="VMP">VMP</option><option value="Off Talcr">Off Talcr</option><option value="Len_Dex_Ixa">Len_Dex_Ixa</option><option value="Cyclo_Pred">Cyclo_Pred</option><option value="Bendamustine">Bendamustine</option><option value="Len_Dex">Len_Dex</option><option value="PBDa">PBDa</option><option value="Len">Len</option><option value="BCPa">BCPa</option><option value="ESHAP">ESHAP</option><option value="Idarubicin">Idarubicin</option><option value="Myeloma XI_Len_Vor">Myeloma XI_Len_Vor</option><option value="Ixa_Cyclo_Dex">Ixa_Cyclo_Dex</option>
+      <option value="?">?</option><option value="ASCT">ASCT</option><option value="Carfilzomib">Carfilzomib</option><option value="Cisplatin">Cisplatin</option><option value="Cyclophosphamide">Cyclophosphamide</option><option value="Daratumumab">Daratumumab</option><option value="Dexamethasone">Dexamethasone</option><option value="Doxorubicin">Doxorubicin</option><option value="Etoposide">Etoposide</option><option value="Ixazomib">Ixazomib</option><option value="Lenalidomide">Lenalidomide</option><option value="Melphalan">Melphalan</option><option value="Melphalan_HD">Melphalan_HD</option><option value="Panobinostat">Panobinostat</option><option value="Pomalidomide">Pomalidomide</option><option value="Predinosolone">Predinosolone</option><option value="Thalidomide">Thalidomide</option><option value="Velcade">Velcade</option><option value="Vorinostat">Vorinostat</option><option value="Bendamastine">Bendamastine</option><option value="Idarubicin">Idarubicin</option><option value="Cytaribine">Cytaribine</option><option value="Isatuximab">Isatuximab</option><option value="Imid - other">Imid - other</option><option value="PI - other">PI - other</option><option value="Alk - other">Alk - other</option><option value="Top - other">Top - other</option><option value="CD38 - other">CD38 - other</option><option value="HDAC - other">HDAC - other</option><option value="Steroid - other">Steroid - other</option>
+      <option value="VTD">VTD</option><option value="HD Melphalan">HD Melphalan</option><option value="RCD">RCD</option><option value="Daratumamab">Daratumamab</option><option value="PBD">PBD</option><option value="DT_PACE">DT_PACE</option><option value="CTDa">CTDa</option><option value="VCDa">VCDa</option><option value="Main Len">Main Len</option><option value="MUK4">MUK4</option><option value="Main Vorinostat">Main Vorinostat</option><option value="Myeloma XI _ RCDa">Myeloma XI _ RCDa</option><option value="Pom_Dex">Pom_Dex</option><option value="MUK5">MUK5</option><option value="DVD">DVD</option><option value="CTD">CTD</option><option value="Myeloma XI _ CTD">Myeloma XI _ CTD</option><option value="Car_Dex">Car_Dex</option><option value="VMP">VMP</option><option value="Off Talcr">Off Talcr</option><option value="Len_Dex_Ixa">Len_Dex_Ixa</option><option value="Cyclo_Pred">Cyclo_Pred</option><option value="Bendamustine">Bendamustine</option><option value="Len_Dex">Len_Dex</option><option value="PBDa">PBDa</option><option value="Len">Len</option><option value="BCPa">BCPa</option><option value="ESHAP">ESHAP</option><option value="Idarubicin">Idarubicin</option><option value="Myeloma XI_Len_Vor">Myeloma XI_Len_Vor</option><option value="Ixa_Cyclo_Dex">Ixa_Cyclo_Dex</option><option value="Car_Len_Dex">Car_Len_Dex</option><option value="Isa_Pom_Dex">Isa_Pom_Dex</option><option value="Dara_Vel_Thal_Dex">Dara_Vel_Thal_Dex</option>
       </select>
+    `
+    pos += 1
+
+    let cycles = row.insertCell(pos) 
+    cycles.innerHTML = `<select name="cycles">
+      <option value=1>1</option>
+      <option value=2>2</option>
+      <option value=3>3</option>
+      <option value=4>4</option>
+      <option value=5>5</option>
+      <option value=6>6</option>
     `
     pos += 1
 
@@ -187,6 +199,7 @@ export class HaemTreatmentExtractor extends React.Component {
     <thead>
 		<tr><th>Line</th>
 			<th>Treatment</th>
+      <th>Cycles</th>
 			<th>Start</th>
 			<th>End</th>
 			<th>Best response</th>
