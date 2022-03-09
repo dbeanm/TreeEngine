@@ -147,13 +147,13 @@ export class HaemTreatmentExtractor extends React.Component {
 
     let startDate = row.insertCell(pos)
     startDate.innerHTML = `
-         <input type="date" name="start">
+         <input type="month" name="start">
     `
     pos += 1
 
     let endDate = row.insertCell(pos)
     endDate.innerHTML = `
-    <input type="date" name="end">
+    <input type="month" name="end">
     `
     pos += 1
 
@@ -174,7 +174,7 @@ export class HaemTreatmentExtractor extends React.Component {
 
     let relapseDate = row.insertCell(pos)
     relapseDate.innerHTML = `
-    <input type="date" name="relapse">
+    <input type="month" name="relapse">
     `
     pos += 1
 
