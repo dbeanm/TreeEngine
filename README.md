@@ -1,5 +1,17 @@
 # TreeEngine
 
+This is a research tool in active development. Not for production use. 
+
+## Overview
+TreeEngine allows multiple models to be coordinated in a tree structure. Every node in the tree can contain one or more models (any function, a hand-crafted model, a learned model...) to run on entry. Edges have conditions to determine which path to follow after execution. For example the early nodes may run models for disease diagnosis and subtyping, then use edge conditions based on those results to then run relevant risk stratification, and from there run relevant drug elegibility models. 
+
+
+The goals:
+* models are loaded in a format that allows TreeEngine to inter a basic UI, which variables are used in multiple places, and to check for potential conflicts
+* The full execution of the overall model is transparent and explainable
+* Allow plugins to expand base features
+* Minimum technical knowledge required to design models - only target domain expertise should be required
+
 ## Run
 `npm run dev` is set to run a local test server. use for local testing.
 `npm run start` is set to serve from a basic server for heroku
