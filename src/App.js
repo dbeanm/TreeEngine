@@ -2713,6 +2713,7 @@ export class Workspace extends React.Component {
 
     const papaparseOptions = {
       header: true,
+      dynamicTyping: true, //may be better to implement own type conversion later as these might not be consistent with internal e.g. container.get_true_opts()
     }
 
     let all_user_input_values = {}
