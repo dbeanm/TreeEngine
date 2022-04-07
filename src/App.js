@@ -2467,7 +2467,7 @@ export class Workspace extends React.Component {
     ]);
     const allVarNamesArray = [...allVarNames];
     let header = allVarNamesArray.map((name) => {
-      return {Header: name, accessor:  (d) => d[name], id: name}
+      return {Header: name, accessor:  (d) => String(d[name]), id: name}
     })
     let part, n
     for (const [layer_name, units] of Object.entries(layers)) {

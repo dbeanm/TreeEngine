@@ -695,7 +695,7 @@ export class GraphContainer {
 		}
 		let mv = model_input[condition.prop]
 		//note triple === otherwise 0 == ""
-		if(!model_input.hasOwnProperty(condition.prop) || mv === "" || (typeof mv != "string" &&  isNaN(mv))){
+		if(!model_input.hasOwnProperty(condition.prop) || mv === "" || (typeof mv != "string" &&  isNaN(mv)) || mv === null){
 			result.result = undefined
 			result.tested = false
 			result.reason = 'missing ' + condition.prop
@@ -771,7 +771,7 @@ export class GraphContainer {
 
 			val = input[el]
 			type = this.metadata.variables[el].value_type
-			if ( type == 'num' && isNaN(val)  ||  type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
+			if ( val === null || type == 'num' && isNaN(val)  ||  type == 'num' && val === '' || type == 'bool' && val === '' || type == 'str' && val == ''){
 				all_missing_input.push(el)
 			}
 		}, this)
