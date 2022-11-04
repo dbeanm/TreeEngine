@@ -168,13 +168,13 @@ export class HaemTreatmentExtractor extends React.Component {
 
     let relapse = row.insertCell(pos)
     relapse.innerHTML = `
-    <select name="relapse_state"><option value="no">No</option><option value="Yes">Yes</option></select>
+    <select name="relapse"><option value="no">No</option><option value="Yes">Yes</option></select>
     `
     pos += 1
 
     let relapseDate = row.insertCell(pos)
     relapseDate.innerHTML = `
-    <input type="month" name="relapse">
+    <input type="month" name="relapse_date">
     `
     pos += 1
 
