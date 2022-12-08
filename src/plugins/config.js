@@ -9,6 +9,9 @@ CytogeneticsExtractor: {
 	}
 */
 
+const treatment_api_host = process.env.REACT_APP_TEX_HOST
+const cyto_api_host = process.env.REACT_APP_CYTO_HOST
+
 const PluginConfig = {
 	HaemTreatmentExtractor: {
 		masks: ['Prior alkylator',
@@ -51,7 +54,7 @@ const PluginConfig = {
 		'Response then relapse to prior line'],
 		display_name: "Haematology treatment extractor",
 		enabled: true,
-		host: `http://${window.location.hostname}:5001/` //"http://treatmentplugin:5000/" //"http://localhost:5000/"
+		host: treatment_api_host //`http://${window.location.hostname}:5001/` //"http://treatmentplugin:5000/" //"http://localhost:5000/"
 	},
 
 	CytogeneticsExtractor: {
@@ -65,7 +68,7 @@ const PluginConfig = {
 		],
 		display_name: "Cytogenetics extractor",
 		enabled: true,
-		host: `http://${window.location.hostname}:5002/`,
+		host: cyto_api_host //`http://${window.location.hostname}:5002/`,
 	},
 
 	DummyExtractor: {

@@ -12,6 +12,23 @@ The goals:
 * Allow plugins to expand base features
 * Minimum technical knowledge required to design models - only target domain expertise should be required
 
+# Deployment
+## environment variables
+* REACT_APP_TEX_HOST
+* REACT_APP_CYTO_HOST
+
+## deployment .env
+* original old rosalind deployment used
+* * config.js treatment extractor host: `http://${window.location.hostname}:5001/`
+* * config.js cytogenetics extractor host: `http://${window.location.hostname}:5002/`
+
+
+Alternatively the hosts can be set with environment variables
+```
+REACT_APP_CYTO_HOST="http://localhost:5000/" npm run build
+npm run start
+```
+
 ## Run
 `npm run dev` is set to run a local test server. use for local testing.
 `npm run start` is set to serve from a basic server for heroku
