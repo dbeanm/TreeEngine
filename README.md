@@ -14,16 +14,13 @@ The goals:
 
 # Deployment
 ## environment variables
+Two environment variables must be set for plugins to work - these set the hosts where the plugin backend servers are running. If the plugins are not enabled or are not used then these can be safely ignored.
+
 * REACT_APP_TEX_HOST
 * REACT_APP_CYTO_HOST
 
-## deployment .env
-* original old rosalind deployment used
-* * config.js treatment extractor host: `http://${window.location.hostname}:5001/`
-* * config.js cytogenetics extractor host: `http://${window.location.hostname}:5002/`
+These can be set in an .env file or inline:
 
-
-Alternatively the hosts can be set with environment variables
 ```
 REACT_APP_CYTO_HOST="http://localhost:5000/" npm run build
 npm run start
